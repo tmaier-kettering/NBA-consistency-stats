@@ -930,15 +930,31 @@ ul { list-style: none; }
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 560px;
+  max-width: 100%;
+}
+.player-search-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 .player-search-section .section-title {
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--color-primary);
 }
+.compare-top-btn {
+  background: #fff;
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+}
 .player-search-wrap {
   position: relative;
+  max-width: 560px;
+}
+.compare-search-wrap {
+  position: relative;
+  max-width: 560px;
 }
 .player-search-input {
   width: 100%;
@@ -1148,9 +1164,6 @@ ul { list-style: none; }
   width: 14px;
   height: 14px;
   accent-color: var(--color-primary);
-}
-#comparePlayerSelect {
-  min-width: 170px;
 }
 .hist-empty {
   display: flex;

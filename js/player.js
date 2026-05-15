@@ -77,8 +77,10 @@ const els = {
   yMaxInput:           $('yMaxInput'),
   applyHistBtn:        $('applyHistBtn'),
   resetHistBtn:        $('resetHistBtn'),
-  comparePlayerSelect: $('comparePlayerSelect'),
   comparePlayerBtn:    $('comparePlayerBtn'),
+  compareSearchWrap:   $('compareSearchWrap'),
+  compareSearchInput:  $('compareSearchInput'),
+  compareAcDropdown:   $('compareAcDropdown'),
   normalTrendlineToggle: $('normalTrendlineToggle'),
 
   statsPanelTitle:     $('statsPanelTitle'),
@@ -209,45 +211,24 @@ function updateCompareButtonLabel() {
   if (state.comparePlayer) {
     els.comparePlayerBtn.textContent = `Remove Compare (${state.comparePlayer.name})`;
   } else {
-    els.comparePlayerBtn.textContent = 'Compare Selected';
+    els.comparePlayerBtn.textContent = 'Compare Player';
   }
-  const hasPrimary = !!state.selectedPlayer;
-  const hasSelection = !!els.comparePlayerSelect?.value;
-  els.comparePlayerBtn.disabled = !hasPrimary || (!state.comparePlayer && !hasSelection);
+  els.comparePlayerBtn.disabled = !state.selectedPlayer;
 }
 
 /**
- * Populate the compare-player dropdown with current-season players excluding primary.
+ * Return candidate compare-player names in the current season/type, excluding the primary.
+ * @param {string} query Name filter query.
+ * @returns {string[]} Candidate names sorted alphabetically.
  */
-function populateComparePlayerSelect() {
-  if (!els.comparePlayerSelect) return;
+function getCompareCandidateNames(query = '') {
+  const q = query.trim().toLowerCase();
   const players = getCurrentSeasonPlayers()
     .map(p => p.name)
+    .filter(name => name !== state.selectedPlayer?.name)
+    .filter(name => !q || name.toLowerCase().includes(q))
     .sort((a, b) => a.localeCompare(b));
-  const selectedName = state.selectedPlayer?.name || '';
-  const compareName = state.comparePlayer?.name || '';
-
-  els.comparePlayerSelect.innerHTML = '';
-  const placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.textContent = selectedName ? 'Select player…' : 'Select primary player first';
-  els.comparePlayerSelect.appendChild(placeholder);
-
-  players
-    .filter(name => name !== selectedName)
-    .forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      els.comparePlayerSelect.appendChild(opt);
-    });
-
-  if (compareName && players.includes(compareName) && compareName !== selectedName) {
-    els.comparePlayerSelect.value = compareName;
-  } else {
-    els.comparePlayerSelect.value = '';
-  }
-  updateCompareButtonLabel();
+  return players.slice(0, 12);
 }
 
 function escHtml(str) {
@@ -259,6 +240,7 @@ function escHtml(str) {
    ══════════════════════════════════════════════ */
 
 let acFocusIdx = -1;
+let compareAcFocusIdx = -1;
 
 function showAcDropdown(query) {
   const dd = els.playerAcDropdown;
@@ -302,6 +284,69 @@ function hideAcDropdown() {
   els.playerAcDropdown.hidden = true;
   els.playerSearchInput.setAttribute('aria-expanded', 'false');
   acFocusIdx = -1;
+}
+
+function showCompareAcDropdown(query) {
+  const dd = els.compareAcDropdown;
+  dd.innerHTML = '';
+  compareAcFocusIdx = -1;
+
+  if (!query || !state.selectedPlayer) { hideCompareAcDropdown(); return; }
+
+  const q = query.toLowerCase();
+  const matches = getCompareCandidateNames(query);
+  if (!matches.length) { hideCompareAcDropdown(); return; }
+
+  for (const name of matches) {
+    const li = document.createElement('li');
+    li.role = 'option';
+    li.setAttribute('aria-selected', 'false');
+
+    const idx = name.toLowerCase().indexOf(q);
+    if (idx >= 0) {
+      li.innerHTML =
+        escHtml(name.slice(0, idx)) +
+        `<span class="ac-highlight">${escHtml(name.slice(idx, idx + q.length))}</span>` +
+        escHtml(name.slice(idx + q.length));
+    } else {
+      li.textContent = name;
+    }
+
+    li.addEventListener('mousedown', e => {
+      e.preventDefault();
+      selectComparePlayer(name);
+    });
+    dd.appendChild(li);
+  }
+
+  dd.hidden = false;
+  els.compareSearchInput.setAttribute('aria-expanded', 'true');
+}
+
+function hideCompareAcDropdown() {
+  els.compareAcDropdown.hidden = true;
+  els.compareSearchInput.setAttribute('aria-expanded', 'false');
+  compareAcFocusIdx = -1;
+}
+
+function compareAcMoveSelection(dir) {
+  const items = els.compareAcDropdown.querySelectorAll('li');
+  if (!items.length) return;
+  items[compareAcFocusIdx]?.setAttribute('aria-selected', 'false');
+  compareAcFocusIdx = Math.max(0, Math.min(items.length - 1, compareAcFocusIdx + dir));
+  items[compareAcFocusIdx].setAttribute('aria-selected', 'true');
+  items[compareAcFocusIdx].scrollIntoView({ block: 'nearest' });
+}
+
+function selectComparePlayer(name) {
+  const candidate = findCurrentSeasonPlayerByName(name);
+  if (!candidate || candidate.name === state.selectedPlayer?.name) return;
+  state.comparePlayer = { id: candidate.id, name: candidate.name };
+  els.compareSearchInput.value = '';
+  els.compareSearchWrap.hidden = true;
+  hideCompareAcDropdown();
+  updateCompareButtonLabel();
+  renderHistogram();
 }
 
 function acMoveSelection(dir) {
@@ -354,7 +399,11 @@ async function refreshView() {
   if (state.comparePlayer && !findCurrentSeasonPlayerByName(state.comparePlayer.name)) {
     state.comparePlayer = null;
   }
-  populateComparePlayerSelect();
+  if (!state.comparePlayer) {
+    els.compareSearchInput.value = '';
+  }
+  hideCompareAcDropdown();
+  updateCompareButtonLabel();
 
   renderHistogram();
   renderStatsPanel();
@@ -808,28 +857,50 @@ function bindEvents() {
 
     if (state.comparePlayer) {
       state.comparePlayer = null;
-      if (els.comparePlayerSelect) els.comparePlayerSelect.value = '';
+      els.compareSearchInput.value = '';
+      els.compareSearchWrap.hidden = true;
+      hideCompareAcDropdown();
       updateCompareButtonLabel();
       renderHistogram();
       return;
     }
 
-    const selectedName = els.comparePlayerSelect?.value || '';
-    if (!selectedName) return;
-    const candidate = findCurrentSeasonPlayerByName(selectedName);
-    if (!candidate || candidate.name === state.selectedPlayer.name) return;
-    state.comparePlayer = { id: candidate.id, name: candidate.name };
-    updateCompareButtonLabel();
-    renderHistogram();
+    const willShow = els.compareSearchWrap.hidden;
+    els.compareSearchWrap.hidden = !willShow;
+    if (willShow) {
+      els.compareSearchInput.value = '';
+      hideCompareAcDropdown();
+      els.compareSearchInput.focus();
+    } else {
+      hideCompareAcDropdown();
+    }
   });
 
-  els.comparePlayerSelect.addEventListener('change', () => {
-    const selectedName = els.comparePlayerSelect?.value || '';
-    if (state.comparePlayer && state.comparePlayer.name !== selectedName) {
-      state.comparePlayer = null;
-      renderHistogram();
+  els.compareSearchInput.addEventListener('input', () => {
+    const q = els.compareSearchInput.value.trim();
+    showCompareAcDropdown(q);
+  });
+
+  els.compareSearchInput.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); compareAcMoveSelection(1); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); compareAcMoveSelection(-1); }
+    if (e.key === 'Enter') {
+      const items = els.compareAcDropdown.querySelectorAll('li');
+      if (compareAcFocusIdx >= 0 && items[compareAcFocusIdx]) {
+        selectComparePlayer(items[compareAcFocusIdx].textContent.trim());
+      } else {
+        const q = els.compareSearchInput.value.trim();
+        if (q) selectComparePlayer(q);
+      }
     }
-    updateCompareButtonLabel();
+    if (e.key === 'Escape') {
+      hideCompareAcDropdown();
+      els.compareSearchWrap.hidden = true;
+    }
+  });
+
+  els.compareSearchInput.addEventListener('blur', () => {
+    setTimeout(hideCompareAcDropdown, 150);
   });
 
   els.normalTrendlineToggle.addEventListener('change', () => {
@@ -863,7 +934,6 @@ async function init() {
 
   populateSeasonSelect();
   updateSeasonTypeBtns();
-  populateComparePlayerSelect();
   updateCompareButtonLabel();
   bindEvents();
 

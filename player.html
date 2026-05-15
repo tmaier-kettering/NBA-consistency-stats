@@ -41,7 +41,10 @@
 
       <!-- ── Player Search ── -->
       <div class="player-search-section">
-        <h1 class="section-title">Player Stats</h1>
+        <div class="player-search-header">
+          <h1 class="section-title">Player Stats</h1>
+          <button class="btn-apply-hist compare-top-btn" id="comparePlayerBtn" type="button">Compare Player</button>
+        </div>
         <div class="player-search-wrap">
           <input
             type="text"
@@ -55,6 +58,20 @@
             aria-label="Search for a player"
           />
           <ul class="player-ac-dropdown" id="playerAcDropdown" role="listbox" aria-label="Player suggestions" hidden></ul>
+        </div>
+        <div class="compare-search-wrap" id="compareSearchWrap" hidden>
+          <input
+            type="text"
+            class="player-search-input compare-search-input"
+            id="compareSearchInput"
+            placeholder="Search second player to compare…"
+            autocomplete="off"
+            aria-autocomplete="list"
+            aria-controls="compareAcDropdown"
+            aria-expanded="false"
+            aria-label="Search for a comparison player"
+          />
+          <ul class="player-ac-dropdown" id="compareAcDropdown" role="listbox" aria-label="Comparison player suggestions" hidden></ul>
         </div>
       </div>
 
@@ -156,16 +173,6 @@
 
             <button class="btn-apply-hist" id="applyHistBtn">Apply</button>
             <button class="btn-apply-hist" id="resetHistBtn" style="background:transparent;color:var(--color-primary);border:1px solid var(--color-border);">Reset</button>
-            <div class="hist-ctrl-group hist-ctrl-group-compare">
-              <label for="comparePlayerSelect">Compare Player</label>
-              <div class="hist-ctrl-row">
-                <select class="hist-ctrl-select" id="comparePlayerSelect">
-                  <option value="">Select player…</option>
-                </select>
-                <button class="btn-apply-hist" id="comparePlayerBtn" style="background:#ffffff;color:var(--color-primary);border:1px solid var(--color-border);">Compare Selected</button>
-              </div>
-            </div>
-
             <div class="hist-ctrl-group hist-ctrl-group-toggle">
               <label class="hist-toggle-label" for="normalTrendlineToggle">
                 <input type="checkbox" id="normalTrendlineToggle" checked />
