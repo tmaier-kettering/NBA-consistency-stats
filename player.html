@@ -30,6 +30,7 @@
       <nav class="main-nav" aria-label="Main navigation">
         <a href="index.html" class="nav-link">Home</a>
         <a href="player.html" class="nav-link active">Players</a>
+        <a href="https://github.com/tmaier-kettering/NBA-consistency-stats/issues" class="nav-link" target="_blank" rel="noopener noreferrer">Feedback</a>
       </nav>
     </div>
   </header>
@@ -155,6 +156,14 @@
 
             <button class="btn-apply-hist" id="applyHistBtn">Apply</button>
             <button class="btn-apply-hist" id="resetHistBtn" style="background:transparent;color:var(--color-primary);border:1px solid var(--color-border);">Reset</button>
+            <button class="btn-apply-hist" id="comparePlayerBtn" style="background:#ffffff;color:var(--color-primary);border:1px solid var(--color-border);">Compare Player</button>
+
+            <div class="hist-ctrl-group hist-ctrl-group-toggle">
+              <label class="hist-toggle-label" for="normalTrendlineToggle">
+                <input type="checkbox" id="normalTrendlineToggle" checked />
+                <span>Show normal trendline</span>
+              </label>
+            </div>
 
           </div>
         </div>
@@ -184,6 +193,7 @@
       <nav class="footer-nav" aria-label="Footer navigation">
         <a href="index.html">Home</a>
         <a href="player.html">Players</a>
+        <a href="https://github.com/tmaier-kettering/NBA-consistency-stats/issues" target="_blank" rel="noopener noreferrer">Feedback / Bugs / Features</a>
       </nav>
       <p class="footer-copy">&copy; <span id="footerYear"></span> NBA Consistency Stats. All rights reserved.</p>
     </div>

@@ -462,6 +462,14 @@ ul { list-style: none; }
   height: 14px;
   accent-color: var(--color-primary);
 }
+.stat-checkbox-group-toggle {
+  font-weight: 700;
+}
+.stat-checkbox-divider {
+  height: 1px;
+  background: var(--color-border-light);
+  margin: 2px 0 4px;
+}
 
 
 /* ══════════════════════════════════════════════
@@ -530,7 +538,7 @@ ul { list-style: none; }
    TABLE
    ══════════════════════════════════════════════ */
 .stats-table {
-  width: 100%;
+  width: max-content;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.825rem;
@@ -684,7 +692,7 @@ ul { list-style: none; }
 /* CR value cells */
 .stats-table td.metric-cell {
   cursor: default;
-  min-width: 68px;
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: 0.8rem;
   transition: filter 0.1s;
@@ -1119,6 +1127,25 @@ ul { list-style: none; }
   align-self: flex-end;
 }
 .btn-apply-hist:hover { background: var(--color-primary-light); }
+.hist-ctrl-group-toggle {
+  min-height: 30px;
+  justify-content: flex-end;
+}
+.hist-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--color-text);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+.hist-toggle-label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--color-primary);
+}
 .hist-empty {
   display: flex;
   align-items: center;
