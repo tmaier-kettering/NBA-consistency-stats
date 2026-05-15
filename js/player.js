@@ -168,6 +168,11 @@ function getPlayerValues() {
   return logs[state.selectedStat] || null;
 }
 
+/**
+ * Return game-log values for a specific player and the currently selected stat.
+ * @param {{id:number|string,name:string}|null} player Player identity object.
+ * @returns {number[]|null} Stat values array for that player, or null when unavailable.
+ */
 function getValuesForPlayer(player) {
   if (!player || !state.gameLogs) return null;
   const pid = String(player.id);
@@ -176,17 +181,29 @@ function getValuesForPlayer(player) {
   return logs[state.selectedStat] || null;
 }
 
+/**
+ * Get all player records for the currently selected season and season type.
+ * @returns {Array<object>} Current season player records from stats.json.
+ */
 function getCurrentSeasonPlayers() {
   const key = `${state.currentSeason}|${state.seasonType}`;
   return state.allData?.data[key] || [];
 }
 
+/**
+ * Case-insensitive exact-name lookup for players in the current season/type.
+ * @param {string} name Player name to match.
+ * @returns {object|null} Matching player record or null.
+ */
 function findCurrentSeasonPlayerByName(name) {
   const normalized = String(name || '').trim().toLowerCase();
   if (!normalized) return null;
   return getCurrentSeasonPlayers().find(p => p.name.toLowerCase() === normalized) || null;
 }
 
+/**
+ * Update compare button text and enabled/disabled state from current selection state.
+ */
 function updateCompareButtonLabel() {
   if (!els.comparePlayerBtn) return;
   if (state.comparePlayer) {
@@ -199,6 +216,9 @@ function updateCompareButtonLabel() {
   els.comparePlayerBtn.disabled = !hasPrimary || (!state.comparePlayer && !hasSelection);
 }
 
+/**
+ * Populate the compare-player dropdown with current-season players excluding primary.
+ */
 function populateComparePlayerSelect() {
   if (!els.comparePlayerSelect) return;
   const players = getCurrentSeasonPlayers()
@@ -378,6 +398,12 @@ function computeBins(values) {
   return computeBinsFromEdges(values, edges);
 }
 
+/**
+ * Compute histogram bins using precomputed edges.
+ * @param {number[]|null} values Numeric values to bin.
+ * @param {number[]|null} edges Bin edge array of length >= 2.
+ * @returns {Array<{x0:number,x1:number,count:number}>} Bin objects with counts.
+ */
 function computeBinsFromEdges(values, edges) {
   if (!values || !values.length || !edges || edges.length < 2) return [];
 
@@ -411,6 +437,11 @@ function normalCdf(x, mean, std) {
   return 0.5 * (1 + erf(z));
 }
 
+/**
+ * Approximate error function using Abramowitz & Stegun 7.1.26.
+ * @param {number} x Input value.
+ * @returns {number} Approximate erf(x).
+ */
 function erf(x) {
   // Abramowitz & Stegun 7.1.26 approximation coefficients for erf(x).
   const sign = x < 0 ? -1 : 1;
@@ -426,6 +457,12 @@ function erf(x) {
   return sign * y;
 }
 
+/**
+ * Compute expected histogram counts under a fitted normal distribution.
+ * @param {number[]|null} values Observed game-log values.
+ * @param {Array<{x0:number,x1:number,count:number}>|null} bins Histogram bins.
+ * @returns {number[]} Expected counts per bin for the normal trendline.
+ */
 function computeNormalTrendline(values, bins) {
   if (!values?.length || !bins?.length) return [];
   const n = values.length;
