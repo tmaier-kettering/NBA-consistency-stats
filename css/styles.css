@@ -910,6 +910,162 @@ ul { list-style: none; }
 }
 .footer-nav a:hover { color: var(--color-accent); }
 
+/* ══════════════════════════════════════════════
+   CONSISTENCY HOME PAGE
+   ══════════════════════════════════════════════ */
+.consistency-home-main {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 28px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.consistency-hero {
+  background: linear-gradient(135deg, #0f2340 0%, #1d3557 65%, #2a4a7f 100%);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-md);
+}
+.consistency-eyebrow {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-accent);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.consistency-hero h1 {
+  font-size: 1.8rem;
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+.consistency-hero p {
+  max-width: 900px;
+  font-size: 0.96rem;
+  line-height: 1.6;
+  color: rgba(255,255,255,.92);
+}
+.consistency-hero-cta {
+  margin-top: 16px;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: #14263f;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+.consistency-concepts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.consistency-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+}
+.consistency-card h2 {
+  font-size: 1rem;
+  color: var(--color-primary);
+  margin-bottom: 10px;
+}
+.consistency-card p {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+.consistency-card-highlight {
+  border-color: rgba(247,165,40,.45);
+  background: linear-gradient(180deg, #fff 0%, #fff8ea 100%);
+}
+.cr-equation-card {
+  margin: 14px 0 10px;
+  background: #fff;
+  border: 1px solid #f3d28e;
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+.equation-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+.equation-display {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+.equation-display span { color: #0f2340; }
+.consistency-note {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.consistency-case-study {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.case-study-header h2 {
+  font-size: 1.2rem;
+  color: var(--color-primary);
+  margin-bottom: 6px;
+}
+.case-study-header p {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+.case-study-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.case-metric-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.case-metric-card h3 {
+  font-size: 0.96rem;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+.case-metric-card p {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+.case-metric-label { font-weight: 700; color: var(--color-text); }
+.case-cr {
+  margin-top: 6px;
+  font-size: 1rem !important;
+}
+.consistency-chart-card { padding-bottom: 16px; }
+.case-study-chart-note {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+}
+.content-page-title {
+  font-size: 1.05rem;
+  color: var(--color-primary);
+  margin-bottom: 4px;
+}
+
 
 /* ══════════════════════════════════════════════
    PLAYER PAGE — LAYOUT
@@ -1237,9 +1393,14 @@ ul { list-style: none; }
 }
 
 @media (max-width: 900px) {
+  .consistency-concepts,
+  .case-study-metrics { grid-template-columns: 1fr; }
   .player-content-row { flex-direction: column; }
   .stats-panel { width: 100%; }
 }
 @media (max-width: 640px) {
+  .consistency-home-main { padding: 18px 12px 22px; }
+  .consistency-hero { padding: 20px 16px; }
+  .consistency-hero h1 { font-size: 1.35rem; }
   .player-main { padding: 16px 12px; }
 }

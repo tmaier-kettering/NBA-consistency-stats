@@ -3,27 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="NBA Consistency Stats — interactive player performance consistency ratings across seasons." />
-  <title>NBA Consistency Stats</title>
+  <meta name="description" content="Learn how Consistency Rating (CR) combines average performance and variability to measure NBA player consistency." />
+  <title>Consistency Concepts — NBA Consistency Stats</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
 
-  <!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="index.html" aria-label="NBA Consistency Stats home">
-        <!-- Basketball logo (SVG) -->
         <svg class="brand-logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <circle cx="24" cy="24" r="22" fill="#C9082A" stroke="#F7A528" stroke-width="2"/>
-          <!-- vertical seam -->
           <path d="M24 2 C17 10 17 20 17 24 C17 28 17 38 24 46" stroke="#F7A528" stroke-width="1.8" fill="none"/>
           <path d="M24 2 C31 10 31 20 31 24 C31 28 31 38 24 46" stroke="#F7A528" stroke-width="1.8" fill="none"/>
-          <!-- horizontal seam -->
           <path d="M2 24 L46 24" stroke="#F7A528" stroke-width="1.8"/>
-          <!-- top arc -->
           <path d="M4 16 Q24 11 44 16" stroke="#F7A528" stroke-width="1.2" fill="none"/>
-          <!-- bottom arc -->
           <path d="M4 32 Q24 37 44 32" stroke="#F7A528" stroke-width="1.2" fill="none"/>
         </svg>
 
@@ -35,115 +29,89 @@
 
       <nav class="main-nav" aria-label="Main navigation">
         <a href="index.html" class="nav-link active">Home</a>
+        <a href="data-table.html" class="nav-link">Data Table</a>
         <a href="player.html" class="nav-link">Players</a>
         <a href="https://github.com/tmaier-kettering/NBA-consistency-stats/issues" class="nav-link" target="_blank" rel="noopener noreferrer">Feedback</a>
       </nav>
     </div>
   </header>
 
-  <!-- ═══════════════════════════ MAIN ════════════════════════════ -->
-  <main class="site-main">
-    <div class="app-layout">
+  <main class="site-main consistency-home-main">
+    <section class="consistency-hero">
+      <p class="consistency-eyebrow">Consistency Explained</p>
+      <h1>How can we measure consistency statistically?</h1>
+      <p>
+        Averages are useful, but they only tell part of the story. Two players can average the same points
+        while delivering very different game-to-game results. This page explains why variability matters and
+        how <strong>Consistency Rating (CR)</strong> captures reliability.
+      </p>
+      <a class="consistency-hero-cta" href="data-table.html">Explore the full data table</a>
+    </section>
 
-      <!-- ───────────── LEFT SIDEBAR FILTERS ───────────── -->
-      <aside class="sidebar" id="sidebar" aria-label="Table filters">
-        <div class="sidebar-title-row">
-          <h2 class="sidebar-title">Filters</h2>
-          <button class="btn-clear-all" id="clearAllFilters" title="Clear all filters">Clear All</button>
+    <section class="consistency-concepts" aria-label="Consistency concepts">
+      <article class="consistency-card">
+        <h2>The average is only half the story</h2>
+        <p>
+          If one player scores near 20 every night and another alternates between very low and very high totals,
+          their averages can match even though their consistency is clearly different.
+        </p>
+      </article>
+
+      <article class="consistency-card">
+        <h2>Why variability matters</h2>
+        <p>
+          Standard deviation measures spread around the average. Low spread means steadier performance, high spread
+          means more fluctuation.
+        </p>
+      </article>
+
+      <article class="consistency-card consistency-card-highlight">
+        <h2>Consistency Rating (CR)</h2>
+        <p>CR adjusts variation relative to a player’s output, so consistency can be compared more fairly.</p>
+        <div class="cr-equation-card" aria-label="Consistency Rating equation">
+          <span class="equation-label">Equation</span>
+          <div class="equation-display">CR = <span>Average</span> &divide; <span>Standard Deviation</span></div>
         </div>
+        <p class="consistency-note">Higher CR means performance is more tightly clustered around the player’s norm.</p>
+      </article>
+    </section>
 
-        <!-- Season -->
-        <div class="filter-group">
-          <label class="filter-label" for="seasonSelect">Season</label>
-          <select class="filter-select" id="seasonSelect">
-            <option value="">Loading…</option>
-          </select>
+    <section class="consistency-case-study" aria-labelledby="caseStudyTitle">
+      <div class="case-study-header">
+        <h2 id="caseStudyTitle">Case Study: DeMar DeRozan vs Scottie Barnes</h2>
+        <p id="caseStudySeasonText">Loading season context…</p>
+      </div>
+
+      <div class="case-study-metrics" id="caseStudyMetrics" aria-live="polite">
+        <article class="case-metric-card" id="demarCard">
+          <h3>DeMar DeRozan</h3>
+          <p><span class="case-metric-label">Average PTS:</span> <span id="demarAvg">—</span></p>
+          <p><span class="case-metric-label">Std Dev:</span> <span id="demarStd">—</span></p>
+          <p class="case-cr"><span class="case-metric-label">CR:</span> <span id="demarCr">—</span></p>
+        </article>
+        <article class="case-metric-card" id="barnesCard">
+          <h3>Scottie Barnes</h3>
+          <p><span class="case-metric-label">Average PTS:</span> <span id="barnesAvg">—</span></p>
+          <p><span class="case-metric-label">Std Dev:</span> <span id="barnesStd">—</span></p>
+          <p class="case-cr"><span class="case-metric-label">CR:</span> <span id="barnesCr">—</span></p>
+        </article>
+      </div>
+
+      <div class="histogram-card consistency-chart-card">
+        <div class="histogram-title" id="consistencyHistogramTitle">
+          DeMar DeRozan vs Scottie Barnes — Points Distribution
         </div>
-
-        <!-- Season type toggle -->
-        <div class="filter-group">
-          <label class="filter-label">Season Type</label>
-          <div class="toggle-group" role="group" aria-label="Season type">
-            <button class="toggle-btn active" id="btnRegular" data-value="Regular Season">Regular Season</button>
-            <button class="toggle-btn" id="btnPlayoffs" data-value="Playoffs">Playoffs</button>
-          </div>
+        <p class="case-study-chart-note">
+          Fixed settings: trendlines on, x-axis 0 to 50, 10 bins.
+        </p>
+        <div class="histogram-chart-wrap">
+          <canvas id="consistencyHistogramCanvas" aria-label="DeMar DeRozan and Scottie Barnes points distribution" role="img"></canvas>
+          <div class="hist-empty" id="consistencyHistEmpty" hidden></div>
         </div>
-
-        <!-- Player name autocomplete -->
-        <div class="filter-group">
-          <label class="filter-label" for="playerSearch">Player Name</label>
-          <div class="autocomplete-wrap">
-            <input
-              type="text"
-              class="filter-input"
-              id="playerSearch"
-              placeholder="Search players…"
-              autocomplete="off"
-              aria-autocomplete="list"
-              aria-controls="acDropdown"
-              aria-expanded="false"
-            />
-            <ul class="ac-dropdown" id="acDropdown" role="listbox" aria-label="Player suggestions" hidden></ul>
-          </div>
-        </div>
-
-        <!-- Games played range -->
-        <div class="filter-group">
-          <label class="filter-label">Games Played</label>
-          <div class="gp-inputs-row">
-            <input type="number" class="gp-num" id="gpMinInput" min="0" max="82" value="0" aria-label="Min games played" />
-            <span class="gp-sep">–</span>
-            <input type="number" class="gp-num" id="gpMaxInput" min="0" max="82" value="82" aria-label="Max games played" />
-          </div>
-          <div class="dual-range-track" id="dualRangeTrack">
-            <div class="dual-range-fill" id="dualRangeFill"></div>
-            <input type="range" class="range-input" id="gpMinSlider" min="0" max="82" value="0" step="1" aria-label="Min games played slider" />
-            <input type="range" class="range-input" id="gpMaxSlider" min="0" max="82" value="82" step="1" aria-label="Max games played slider" />
-          </div>
-        </div>
-
-        <!-- Active column filters summary -->
-        <div class="filter-group" id="colFilterSummaryGroup" hidden>
-          <label class="filter-label">Column Filters</label>
-          <ul class="col-filter-summary" id="colFilterSummary" aria-label="Active column filters"></ul>
-        </div>
-
-        <!-- Stat columns -->
-        <div class="filter-group">
-          <label class="filter-label">Displayed Stats</label>
-          <div class="stat-checkbox-list" id="statCheckboxList" role="group" aria-label="Displayed stats"></div>
-        </div>
-      </aside>
-
-      <!-- ───────────── CONTENT AREA ───────────── -->
-      <section class="content-area">
-        <div class="content-top-bar">
-          <p class="row-count" id="rowCount" aria-live="polite"></p>
-        </div>
-
-        <!-- Table -->
-        <div class="table-scroll-wrap" id="tableScrollWrap">
-          <!-- Loading state -->
-          <div class="table-loading" id="tableLoading" aria-busy="true" aria-label="Loading data">
-            <div class="spinner" aria-hidden="true"></div>
-            <p>Loading data…</p>
-          </div>
-
-          <!-- Empty state -->
-          <div class="table-empty" id="tableEmpty" hidden>
-            <p>No players match the current filters.</p>
-          </div>
-
-          <table class="stats-table" id="statsTable" aria-label="Player consistency ratings" hidden>
-            <thead id="tableHead"></thead>
-            <tbody id="tableBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </div>
+      </div>
+    </section>
   </main>
 
-  <!-- ═══════════════════════════ FOOTER ══════════════════════════ -->
   <footer class="site-footer">
     <div class="footer-inner">
       <p class="footer-brand">NBA Consistency Stats</p>
@@ -154,6 +122,7 @@
       </p>
       <nav class="footer-nav" aria-label="Footer navigation">
         <a href="index.html">Home</a>
+        <a href="data-table.html">Data Table</a>
         <a href="player.html">Players</a>
         <a href="https://github.com/tmaier-kettering/NBA-consistency-stats/issues" target="_blank" rel="noopener noreferrer">Feedback / Bugs / Features</a>
       </nav>
@@ -161,39 +130,7 @@
     </div>
   </footer>
 
-  <!-- ═══════════════════════════ OVERLAYS ════════════════════════ -->
-
-  <!-- Header/column tooltip -->
-  <div class="tooltip header-tooltip" id="headerTooltip" role="tooltip" aria-hidden="true" hidden></div>
-
-  <!-- Cell tooltip -->
-  <div class="tooltip cell-tooltip" id="cellTooltip" role="tooltip" aria-hidden="true" hidden></div>
-
-  <!-- Column filter popover (re-used for each column) -->
-  <div class="col-filter-popover" id="colFilterPopover" role="dialog" aria-modal="true" aria-labelledby="colFilterPopoverTitle" hidden>
-    <div class="cfp-header">
-      <span class="cfp-title" id="colFilterPopoverTitle">Filter: PTS CR</span>
-      <button class="cfp-close" id="cfpClose" aria-label="Close filter">&#x2715;</button>
-    </div>
-    <div class="cfp-body">
-      <div class="cfp-row">
-        <label class="cfp-label" for="cfpMin">Min</label>
-        <input type="number" class="cfp-input" id="cfpMin" step="0.01" placeholder="No min" />
-      </div>
-      <div class="cfp-row">
-        <label class="cfp-label" for="cfpMax">Max</label>
-        <input type="number" class="cfp-input" id="cfpMax" step="0.01" placeholder="No max" />
-      </div>
-      <p class="cfp-range-hint" id="cfpRangeHint"></p>
-    </div>
-    <div class="cfp-footer">
-      <button class="btn btn-ghost" id="cfpClear">Clear</button>
-      <button class="btn btn-primary" id="cfpApply">Apply</button>
-    </div>
-  </div>
-  <div class="popover-backdrop" id="popoverBackdrop" hidden></div>
-  <div class="metric-menu" id="metricMenu" role="menu" aria-label="Add associated columns" hidden></div>
-
-  <script src="js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="js/consistency.js"></script>
 </body>
 </html>
