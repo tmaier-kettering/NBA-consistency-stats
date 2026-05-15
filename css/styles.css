@@ -3,6 +3,9 @@
    Design tokens, layout, components
    ────────────────────────────────────────────── */
 
+/* Ensure the HTML `hidden` attribute is respected even when a class sets display */
+[hidden] { display: none !important; }
+
 /* ── Tokens ── */
 :root {
   --color-primary:       #1d3557;   /* navy */

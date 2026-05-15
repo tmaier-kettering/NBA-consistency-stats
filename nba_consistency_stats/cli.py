@@ -7,6 +7,7 @@ from pathlib import Path
 
 from nba_consistency_stats.config import DEFAULT_DATABASE_PATH, DEFAULT_HOST, DEFAULT_PORT, VALID_SEASON_TYPES
 from nba_consistency_stats.database import ConsistencyDatabase
+from nba_consistency_stats.exporter import export_stats_to_json
 from nba_consistency_stats.gui import launch_admin_ui
 from nba_consistency_stats.models import SeasonSelection
 from nba_consistency_stats.nba_api_client import NbaApiClient
@@ -56,6 +57,8 @@ def main() -> int:
         )
         if report.failed_player_count:
             print(f"Skipped {report.failed_player_count} players after repeated API failures.")
+        print("Exporting stats.json for the website...")
+        export_stats_to_json(database.database_path, progress_callback=print)
         return 0
 
     launch_admin_ui(service, host=args.host, port=args.port, open_browser=not args.no_browser)
