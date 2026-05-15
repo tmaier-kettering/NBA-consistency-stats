@@ -256,7 +256,7 @@ function showAcDropdown(query) {
 
   for (const name of matches) {
     const li = document.createElement('li');
-    li.role = 'option';
+    li.setAttribute('role', 'option');
     li.setAttribute('aria-selected', 'false');
 
     const idx = name.toLowerCase().indexOf(q);
@@ -299,8 +299,9 @@ function showCompareAcDropdown(query) {
 
   for (const name of matches) {
     const li = document.createElement('li');
-    li.role = 'option';
+    li.setAttribute('role', 'option');
     li.setAttribute('aria-selected', 'false');
+    li.dataset.playerName = name;
 
     const idx = name.toLowerCase().indexOf(q);
     if (idx >= 0) {
@@ -524,6 +525,7 @@ function computeNormalTrendline(values, bins) {
   }
 
   return bins.map(bin => {
+    // Guard tiny floating-point drift that can produce values like -1e-16.
     const p = Math.max(0, normalCdf(bin.x1, mean, std) - normalCdf(bin.x0, mean, std));
     return p * n;
   });
@@ -887,7 +889,7 @@ function bindEvents() {
     if (e.key === 'Enter') {
       const items = els.compareAcDropdown.querySelectorAll('li');
       if (compareAcFocusIdx >= 0 && items[compareAcFocusIdx]) {
-        selectComparePlayer(items[compareAcFocusIdx].textContent.trim());
+        selectComparePlayer(items[compareAcFocusIdx].dataset.playerName || items[compareAcFocusIdx].textContent.trim());
       } else {
         const q = els.compareSearchInput.value.trim();
         if (q) selectComparePlayer(q);
