@@ -156,6 +156,7 @@ function makeColKey(stat, metric) {
 }
 
 function parseColKey(colKey) {
+  if (colKey === null || colKey === undefined) return null;
   const [stat, metric] = String(colKey).split('__');
   if (!stat || !metric || !METRIC_DEF[metric]) return null;
   return { stat, metric };
@@ -391,7 +392,8 @@ function sortPlayers(players) {
       // Tie-break rounded percentile with rank so ordering aligns with rank.
       const aRank = getRawMetricValue(aStat, 'rank');
       const bRank = getRawMetricValue(bStat, 'rank');
-      cmp = compareNullableNumbers(aRank, bRank, sortDir === 'desc' ? 'asc' : 'desc');
+      const rankDir = sortDir === 'desc' ? 'asc' : 'desc';
+      cmp = compareNullableNumbers(aRank, bRank, rankDir);
       if (cmp !== 0) return cmp;
 
       return a.name.localeCompare(b.name);
@@ -891,9 +893,12 @@ function showCellTooltip(playerName, colDef, statObj, e) {
       `<strong>${playerName}</strong><div class="tt-stat">No data available for ${colDef.label}</div>`;
   } else {
     const primary = formatMetricValue(statObj, colDef.metric) || 'N/A';
-    const crStr = getRawMetricValue(statObj, 'cr') !== null ? Number(getRawMetricValue(statObj, 'cr')).toFixed(4) : 'N/A';
-    const avgStr = getRawMetricValue(statObj, 'avg') !== null ? Number(getRawMetricValue(statObj, 'avg')).toFixed(4) : 'N/A';
-    const stdStr = getRawMetricValue(statObj, 'std') !== null ? Number(getRawMetricValue(statObj, 'std')).toFixed(4) : 'N/A';
+    const crRaw = getRawMetricValue(statObj, 'cr');
+    const avgRaw = getRawMetricValue(statObj, 'avg');
+    const stdRaw = getRawMetricValue(statObj, 'std');
+    const crStr = crRaw !== null ? Number(crRaw).toFixed(4) : 'N/A';
+    const avgStr = avgRaw !== null ? Number(avgRaw).toFixed(4) : 'N/A';
+    const stdStr = stdRaw !== null ? Number(stdRaw).toFixed(4) : 'N/A';
     const rankRaw = getRawMetricValue(statObj, 'rank');
     const pctRaw = getRawMetricValue(statObj, 'pct');
     const rankStr = rankRaw !== null ? `#${rankRaw}` : 'N/A';
