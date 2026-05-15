@@ -33,7 +33,9 @@ const state = {
   currentSeason:    '',
   seasonType:       'Regular Season',
   selectedPlayer:   null,   // { id, name }
+  comparePlayer:    null,   // optional second player { id, name }
   selectedStat:     'PTS',
+  showNormalTrendline: true,
 
   // Loaded game log for current season+type: { "playerId": { "STAT": [v1, v2, ...] } }
   gameLogs:         null,
@@ -75,6 +77,11 @@ const els = {
   yMaxInput:           $('yMaxInput'),
   applyHistBtn:        $('applyHistBtn'),
   resetHistBtn:        $('resetHistBtn'),
+  comparePlayerBtn:    $('comparePlayerBtn'),
+  compareSearchWrap:   $('compareSearchWrap'),
+  compareSearchInput:  $('compareSearchInput'),
+  compareAcDropdown:   $('compareAcDropdown'),
+  normalTrendlineToggle: $('normalTrendlineToggle'),
 
   statsPanelTitle:     $('statsPanelTitle'),
   statsPanelGrid:      $('statsPanelGrid'),
@@ -163,6 +170,67 @@ function getPlayerValues() {
   return logs[state.selectedStat] || null;
 }
 
+/**
+ * Return game-log values for a specific player and the currently selected stat.
+ * @param {{id:number|string,name:string}|null} player Player identity object.
+ * @returns {number[]|null} Stat values array for that player, or null when unavailable.
+ */
+function getValuesForPlayer(player) {
+  if (!player || !state.gameLogs) return null;
+  const pid = String(player.id);
+  const logs = state.gameLogs[pid];
+  if (!logs) return null;
+  return logs[state.selectedStat] || null;
+}
+
+/**
+ * Get all player records for the currently selected season and season type.
+ * @returns {Array<object>} Current season player records from stats.json.
+ */
+function getCurrentSeasonPlayers() {
+  const key = `${state.currentSeason}|${state.seasonType}`;
+  return state.allData?.data[key] || [];
+}
+
+/**
+ * Case-insensitive exact-name lookup for players in the current season/type.
+ * @param {string} name Player name to match.
+ * @returns {object|null} Matching player record or null.
+ */
+function findCurrentSeasonPlayerByName(name) {
+  const normalized = String(name || '').trim().toLowerCase();
+  if (!normalized) return null;
+  return getCurrentSeasonPlayers().find(p => p.name.toLowerCase() === normalized) || null;
+}
+
+/**
+ * Update compare button text and enabled/disabled state from current selection state.
+ */
+function updateCompareButtonLabel() {
+  if (!els.comparePlayerBtn) return;
+  if (state.comparePlayer) {
+    els.comparePlayerBtn.textContent = `Remove Compare (${state.comparePlayer.name})`;
+  } else {
+    els.comparePlayerBtn.textContent = 'Compare Player';
+  }
+  els.comparePlayerBtn.disabled = !state.selectedPlayer;
+}
+
+/**
+ * Return candidate compare-player names in the current season/type, excluding the primary.
+ * @param {string} query Name filter query.
+ * @returns {string[]} Candidate names sorted alphabetically.
+ */
+function getCompareCandidateNames(query = '') {
+  const q = query.trim().toLowerCase();
+  const players = getCurrentSeasonPlayers()
+    .map(p => p.name)
+    .filter(name => name !== state.selectedPlayer?.name)
+    .filter(name => !q || name.toLowerCase().includes(q))
+    .sort((a, b) => a.localeCompare(b));
+  return players.slice(0, 12);
+}
+
 function escHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -172,6 +240,7 @@ function escHtml(str) {
    ══════════════════════════════════════════════ */
 
 let acFocusIdx = -1;
+let compareAcFocusIdx = -1;
 
 function showAcDropdown(query) {
   const dd = els.playerAcDropdown;
@@ -187,7 +256,7 @@ function showAcDropdown(query) {
 
   for (const name of matches) {
     const li = document.createElement('li');
-    li.role = 'option';
+    li.setAttribute('role', 'option');
     li.setAttribute('aria-selected', 'false');
 
     const idx = name.toLowerCase().indexOf(q);
@@ -215,6 +284,70 @@ function hideAcDropdown() {
   els.playerAcDropdown.hidden = true;
   els.playerSearchInput.setAttribute('aria-expanded', 'false');
   acFocusIdx = -1;
+}
+
+function showCompareAcDropdown(query) {
+  const dd = els.compareAcDropdown;
+  dd.innerHTML = '';
+  compareAcFocusIdx = -1;
+
+  if (!query || !state.selectedPlayer) { hideCompareAcDropdown(); return; }
+
+  const q = query.toLowerCase();
+  const matches = getCompareCandidateNames(query);
+  if (!matches.length) { hideCompareAcDropdown(); return; }
+
+  for (const name of matches) {
+    const li = document.createElement('li');
+    li.setAttribute('role', 'option');
+    li.setAttribute('aria-selected', 'false');
+    li.dataset.playerName = name;
+
+    const idx = name.toLowerCase().indexOf(q);
+    if (idx >= 0) {
+      li.innerHTML =
+        escHtml(name.slice(0, idx)) +
+        `<span class="ac-highlight">${escHtml(name.slice(idx, idx + q.length))}</span>` +
+        escHtml(name.slice(idx + q.length));
+    } else {
+      li.textContent = name;
+    }
+
+    li.addEventListener('mousedown', e => {
+      e.preventDefault();
+      selectComparePlayer(name);
+    });
+    dd.appendChild(li);
+  }
+
+  dd.hidden = false;
+  els.compareSearchInput.setAttribute('aria-expanded', 'true');
+}
+
+function hideCompareAcDropdown() {
+  els.compareAcDropdown.hidden = true;
+  els.compareSearchInput.setAttribute('aria-expanded', 'false');
+  compareAcFocusIdx = -1;
+}
+
+function compareAcMoveSelection(dir) {
+  const items = els.compareAcDropdown.querySelectorAll('li');
+  if (!items.length) return;
+  items[compareAcFocusIdx]?.setAttribute('aria-selected', 'false');
+  compareAcFocusIdx = Math.max(0, Math.min(items.length - 1, compareAcFocusIdx + dir));
+  items[compareAcFocusIdx].setAttribute('aria-selected', 'true');
+  items[compareAcFocusIdx].scrollIntoView({ block: 'nearest' });
+}
+
+function selectComparePlayer(name) {
+  const candidate = findCurrentSeasonPlayerByName(name);
+  if (!candidate || candidate.name === state.selectedPlayer?.name) return;
+  state.comparePlayer = { id: candidate.id, name: candidate.name };
+  els.compareSearchInput.value = '';
+  els.compareSearchWrap.hidden = true;
+  hideCompareAcDropdown();
+  updateCompareButtonLabel();
+  renderHistogram();
 }
 
 function acMoveSelection(dir) {
@@ -246,6 +379,11 @@ async function selectPlayer(name) {
     state.selectedPlayer = foundId !== null ? { id: foundId, name } : { id: null, name };
   }
 
+  if (state.comparePlayer && state.comparePlayer.name === state.selectedPlayer?.name) {
+    state.comparePlayer = null;
+    updateCompareButtonLabel();
+  }
+
   await refreshView();
 }
 
@@ -258,6 +396,15 @@ async function refreshView() {
 
   // Ensure game logs are loaded for the current season+type
   await loadGameLogs(state.currentSeason, state.seasonType);
+
+  if (state.comparePlayer && !findCurrentSeasonPlayerByName(state.comparePlayer.name)) {
+    state.comparePlayer = null;
+  }
+  if (!state.comparePlayer) {
+    els.compareSearchInput.value = '';
+  }
+  hideCompareAcDropdown();
+  updateCompareButtonLabel();
 
   renderHistogram();
   renderStatsPanel();
@@ -298,6 +445,18 @@ function computeBins(values) {
 
   if (edges.length < 2) return [];
 
+  return computeBinsFromEdges(values, edges);
+}
+
+/**
+ * Compute histogram bins using precomputed edges.
+ * @param {number[]|null} values Numeric values to bin.
+ * @param {number[]|null} edges Bin edge array of length >= 2.
+ * @returns {Array<{x0:number,x1:number,count:number}>} Bin objects with counts.
+ */
+function computeBinsFromEdges(values, edges) {
+  if (!values || !values.length || !edges || edges.length < 2) return [];
+
   // Count values in each bin
   const bins = [];
   for (let i = 0; i < edges.length - 1; i++) {
@@ -311,14 +470,79 @@ function computeBins(values) {
   return bins;
 }
 
+/**
+ * Approximate Normal(μ, σ) cumulative probability P(X <= x).
+ * @param {number} x Value to evaluate.
+ * @param {number} mean Distribution mean (μ).
+ * @param {number} std Distribution standard deviation (σ).
+ * @returns {number} Probability in [0, 1].
+ */
+function normalCdf(x, mean, std) {
+  if (!Number.isFinite(x) || !Number.isFinite(mean) || !Number.isFinite(std) || std <= 0) {
+    if (x < mean) return 0;
+    if (x > mean) return 1;
+    return 0.5;
+  }
+  const z = (x - mean) / (std * Math.sqrt(2));
+  return 0.5 * (1 + erf(z));
+}
+
+/**
+ * Approximate error function using Abramowitz & Stegun 7.1.26.
+ * @param {number} x Input value.
+ * @returns {number} Approximate erf(x).
+ */
+function erf(x) {
+  // Abramowitz & Stegun 7.1.26 approximation coefficients for erf(x).
+  const sign = x < 0 ? -1 : 1;
+  const ax = Math.abs(x);
+  const a1 = 0.254829592;
+  const a2 = -0.284496736;
+  const a3 = 1.421413741;
+  const a4 = -1.453152027;
+  const a5 = 1.061405429;
+  const p = 0.3275911;
+  const t = 1 / (1 + p * ax);
+  const y = 1 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax));
+  return sign * y;
+}
+
+/**
+ * Compute expected histogram counts under a fitted normal distribution.
+ * @param {number[]|null} values Observed game-log values.
+ * @param {Array<{x0:number,x1:number,count:number}>|null} bins Histogram bins.
+ * @returns {number[]} Expected counts per bin for the normal trendline.
+ */
+function computeNormalTrendline(values, bins) {
+  if (!values?.length || !bins?.length) return [];
+  const n = values.length;
+  const mean = values.reduce((sum, v) => sum + v, 0) / n;
+  const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / n;
+  const std = Math.sqrt(variance);
+
+  if (!Number.isFinite(std) || std <= 0) {
+    return [];
+  }
+
+  return bins.map(bin => {
+    // Guard tiny floating-point drift that can produce values like -1e-16.
+    const p = Math.max(0, normalCdf(bin.x1, mean, std) - normalCdf(bin.x0, mean, std));
+    return p * n;
+  });
+}
+
 function renderHistogram() {
   const values = getPlayerValues();
+  const compareValues = getValuesForPlayer(state.comparePlayer);
   const statLabel = STAT_LABELS[state.selectedStat] || state.selectedStat;
   const playerName = state.selectedPlayer?.name || '';
+  const compareName = state.comparePlayer?.name || '';
 
   els.histogramTitle.textContent =
     playerName
-      ? `${playerName} — ${statLabel} (${state.currentSeason} ${state.seasonType})`
+      ? (state.comparePlayer
+          ? `${playerName} vs ${compareName} — ${statLabel} (${state.currentSeason} ${state.seasonType})`
+          : `${playerName} — ${statLabel} (${state.currentSeason} ${state.seasonType})`)
       : 'Select a player to view their histogram';
 
   if (!values || !values.length) {
@@ -349,26 +573,67 @@ function renderHistogram() {
     return `${lo} – ${hi}`;
   });
   const data = bins.map(b => b.count);
+  const edges = bins.length ? [...bins.map(b => b.x0), bins[bins.length - 1].x1] : [];
+  const compareBins = computeBinsFromEdges(compareValues, edges);
+  const compareData = compareBins.map(b => b.count);
 
   const yMax = state.yMax !== null ? state.yMax : undefined;
 
-  const chartData = {
-    labels,
-    datasets: [{
-      label: `Games`,
-      data,
-      backgroundColor: 'rgba(29, 53, 87, 0.72)',
-      borderColor: 'rgba(29, 53, 87, 0.9)',
+  const datasets = [{
+    label: `${playerName} Games`,
+    data,
+    backgroundColor: 'rgba(29, 53, 87, 0.72)',
+    borderColor: 'rgba(29, 53, 87, 0.9)',
+    borderWidth: 1,
+    borderRadius: 3,
+  }];
+
+  if (state.comparePlayer && compareData.length) {
+    datasets.push({
+      label: `${state.comparePlayer.name} Games`,
+      data: compareData,
+      backgroundColor: 'rgba(247, 165, 40, 0.5)',
+      borderColor: 'rgba(247, 165, 40, 0.95)',
       borderWidth: 1,
       borderRadius: 3,
-    }],
+    });
+  }
+
+  if (state.showNormalTrendline) {
+    datasets.push({
+      type: 'line',
+      label: `${playerName} Normal Trend`,
+      data: computeNormalTrendline(values, bins),
+      borderColor: 'rgba(42, 157, 143, 0.95)',
+      backgroundColor: 'rgba(42, 157, 143, 0.15)',
+      borderWidth: 2,
+      pointRadius: 0,
+      tension: 0.25,
+    });
+    if (state.comparePlayer && compareValues?.length && compareData.length) {
+      datasets.push({
+        type: 'line',
+        label: `${state.comparePlayer.name} Normal Trend`,
+        data: computeNormalTrendline(compareValues, bins),
+        borderColor: 'rgba(230, 111, 81, 0.95)',
+        backgroundColor: 'rgba(230, 111, 81, 0.15)',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.25,
+      });
+    }
+  }
+
+  const chartData = {
+    labels,
+    datasets,
   };
 
   const options = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: false },
+      legend: { display: datasets.length > 1 },
       tooltip: {
         callbacks: {
           title(ctx) {
@@ -533,6 +798,7 @@ function bindEvents() {
   els.playerSeasonSelect.addEventListener('change', async () => {
     state.currentSeason = els.playerSeasonSelect.value;
     await refreshView();
+    updateCompareButtonLabel();
   });
 
   // Season type toggle
@@ -541,6 +807,7 @@ function bindEvents() {
       state.seasonType = btn.dataset.value;
       updateSeasonTypeBtns();
       await refreshView();
+      updateCompareButtonLabel();
     });
   });
 
@@ -586,6 +853,62 @@ function bindEvents() {
     els.yMaxInput.value = '';
     renderHistogram();
   });
+
+  els.comparePlayerBtn.addEventListener('click', () => {
+    if (!state.selectedPlayer) return;
+
+    if (state.comparePlayer) {
+      state.comparePlayer = null;
+      els.compareSearchInput.value = '';
+      els.compareSearchWrap.hidden = true;
+      hideCompareAcDropdown();
+      updateCompareButtonLabel();
+      renderHistogram();
+      return;
+    }
+
+    const willShow = els.compareSearchWrap.hidden;
+    els.compareSearchWrap.hidden = !willShow;
+    if (willShow) {
+      els.compareSearchInput.value = '';
+      hideCompareAcDropdown();
+      els.compareSearchInput.focus();
+    } else {
+      hideCompareAcDropdown();
+    }
+  });
+
+  els.compareSearchInput.addEventListener('input', () => {
+    const q = els.compareSearchInput.value.trim();
+    showCompareAcDropdown(q);
+  });
+
+  els.compareSearchInput.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); compareAcMoveSelection(1); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); compareAcMoveSelection(-1); }
+    if (e.key === 'Enter') {
+      const items = els.compareAcDropdown.querySelectorAll('li');
+      if (compareAcFocusIdx >= 0 && items[compareAcFocusIdx]) {
+        selectComparePlayer(items[compareAcFocusIdx].dataset.playerName || items[compareAcFocusIdx].textContent.trim());
+      } else {
+        const q = els.compareSearchInput.value.trim();
+        if (q) selectComparePlayer(q);
+      }
+    }
+    if (e.key === 'Escape') {
+      hideCompareAcDropdown();
+      els.compareSearchWrap.hidden = true;
+    }
+  });
+
+  els.compareSearchInput.addEventListener('blur', () => {
+    setTimeout(hideCompareAcDropdown, 150);
+  });
+
+  els.normalTrendlineToggle.addEventListener('change', () => {
+    state.showNormalTrendline = els.normalTrendlineToggle.checked;
+    renderHistogram();
+  });
 }
 
 function resetAxisOverrides() {
@@ -603,6 +926,7 @@ function resetAxisOverrides() {
 
 async function init() {
   els.footerYear.textContent = new Date().getFullYear();
+  els.normalTrendlineToggle.checked = state.showNormalTrendline;
 
   const ok = await loadStatsData();
   if (!ok) {
@@ -612,6 +936,7 @@ async function init() {
 
   populateSeasonSelect();
   updateSeasonTypeBtns();
+  updateCompareButtonLabel();
   bindEvents();
 
   // Check for ?player=Name query param

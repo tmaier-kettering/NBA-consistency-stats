@@ -30,6 +30,7 @@
       <nav class="main-nav" aria-label="Main navigation">
         <a href="index.html" class="nav-link">Home</a>
         <a href="player.html" class="nav-link active">Players</a>
+        <a href="https://github.com/tmaier-kettering/NBA-consistency-stats/issues" class="nav-link" target="_blank" rel="noopener noreferrer">Feedback</a>
       </nav>
     </div>
   </header>
@@ -40,7 +41,10 @@
 
       <!-- ── Player Search ── -->
       <div class="player-search-section">
-        <h1 class="section-title">Player Stats</h1>
+        <div class="player-search-header">
+          <h1 class="section-title">Player Stats</h1>
+          <button class="btn-apply-hist compare-top-btn" id="comparePlayerBtn" type="button">Compare Player</button>
+        </div>
         <div class="player-search-wrap">
           <input
             type="text"
@@ -54,6 +58,20 @@
             aria-label="Search for a player"
           />
           <ul class="player-ac-dropdown" id="playerAcDropdown" role="listbox" aria-label="Player suggestions" hidden></ul>
+        </div>
+        <div class="compare-search-wrap" id="compareSearchWrap" hidden>
+          <input
+            type="text"
+            class="player-search-input compare-search-input"
+            id="compareSearchInput"
+            placeholder="Search second player to compare…"
+            autocomplete="off"
+            aria-autocomplete="list"
+            aria-controls="compareAcDropdown"
+            aria-expanded="false"
+            aria-label="Search for a comparison player"
+          />
+          <ul class="player-ac-dropdown" id="compareAcDropdown" role="listbox" aria-label="Comparison player suggestions" hidden></ul>
         </div>
       </div>
 
@@ -155,6 +173,12 @@
 
             <button class="btn-apply-hist" id="applyHistBtn">Apply</button>
             <button class="btn-apply-hist" id="resetHistBtn" style="background:transparent;color:var(--color-primary);border:1px solid var(--color-border);">Reset</button>
+            <div class="hist-ctrl-group hist-ctrl-group-toggle">
+              <label class="hist-toggle-label" for="normalTrendlineToggle">
+                <input type="checkbox" id="normalTrendlineToggle" checked />
+                <span>Show normal trendline</span>
+              </label>
+            </div>
 
           </div>
         </div>
@@ -184,6 +208,7 @@
       <nav class="footer-nav" aria-label="Footer navigation">
         <a href="index.html">Home</a>
         <a href="player.html">Players</a>
+        <a href="https://github.com/tmaier-kettering/NBA-consistency-stats/issues" target="_blank" rel="noopener noreferrer">Feedback / Bugs / Features</a>
       </nav>
       <p class="footer-copy">&copy; <span id="footerYear"></span> NBA Consistency Stats. All rights reserved.</p>
     </div>

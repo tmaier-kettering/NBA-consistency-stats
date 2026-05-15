@@ -22,7 +22,7 @@ const STAT_GROUPS = {
 };
 
 const ALL_STATS = [...STAT_GROUPS.scoring, ...STAT_GROUPS.rebounds, ...STAT_GROUPS.other];
-const DEFAULT_SELECTED_STATS = [...STAT_GROUPS.scoring];
+const DEFAULT_SELECTED_STATS = ['PTS'];
 
 const METRIC_ORDER = ['cr', 'avg', 'std', 'rank', 'pct'];
 const ASSOCIATED_METRICS = ['avg', 'std', 'rank', 'pct'];
@@ -87,8 +87,8 @@ const state = {
 
   columnFilters:   {},      // { [colKey]: { min, max } }
 
-  sortColumn:      'name',  // 'name' | 'gp' | colKey
-  sortDir:         'asc',
+  sortColumn:      makeColKey('PTS', 'cr'),  // 'name' | 'gp' | colKey
+  sortDir:         'desc',
 
   activeColFilterKey: null,
   activeMetricMenuStat: null,
@@ -1080,6 +1080,58 @@ function renderStatCheckboxes() {
   const container = els.statCheckboxList;
   container.innerHTML = '';
 
+  const groupDefs = [
+    { key: 'all', label: 'All Stats', stats: ALL_STATS },
+    { key: 'scoring', label: 'Scoring', stats: STAT_GROUPS.scoring },
+    { key: 'rebounds', label: 'Rebounds', stats: STAT_GROUPS.rebounds },
+    { key: 'other', label: 'Other', stats: STAT_GROUPS.other },
+  ];
+
+  const getGroupStatus = stats => {
+    const selectedCount = stats.filter(stat => state.selectedStats.has(stat)).length;
+    if (selectedCount === 0) return 'none';
+    if (selectedCount === stats.length) return 'all';
+    return 'some';
+  };
+
+  const addGroupToggle = (groupKey, label, stats) => {
+    const id = `statChk-group-${groupKey}`;
+    const row = document.createElement('label');
+    row.className = 'stat-checkbox-item stat-checkbox-group-toggle';
+    row.htmlFor = id;
+
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.id = id;
+    input.dataset.group = groupKey;
+
+    const status = getGroupStatus(stats);
+    input.checked = status === 'all';
+    input.indeterminate = status === 'some';
+
+    const text = document.createElement('span');
+    text.textContent = label;
+
+    row.appendChild(input);
+    row.appendChild(text);
+    container.appendChild(row);
+  };
+
+  const setStatChecked = (stat, checked) => {
+    if (checked) {
+      state.selectedStats.add(stat);
+      return;
+    }
+    state.selectedStats.delete(stat);
+    clearStatDerivedState(stat);
+  };
+
+  const addDivider = () => {
+    const divider = document.createElement('div');
+    divider.className = 'stat-checkbox-divider';
+    container.appendChild(divider);
+  };
+
   const addStatOption = stat => {
     const id = `statChk-${stat}`;
     const row = document.createElement('label');
@@ -1100,7 +1152,9 @@ function renderStatCheckboxes() {
     container.appendChild(row);
   };
 
-  const addGroup = (title, stats) => {
+  const addGroup = (title, stats, key) => {
+    addGroupToggle(key, title, stats);
+
     const heading = document.createElement('div');
     heading.className = 'stat-checkbox-group-title';
     heading.textContent = title;
@@ -1108,23 +1162,29 @@ function renderStatCheckboxes() {
     stats.forEach(addStatOption);
   };
 
-  addGroup('Scoring', STAT_GROUPS.scoring);
-  addGroup('Rebounds', STAT_GROUPS.rebounds);
-  addGroup('Other', STAT_GROUPS.other);
+  addGroupToggle('all', 'All Stats', ALL_STATS);
+  addDivider();
+  addGroup('Scoring', STAT_GROUPS.scoring, 'scoring');
+  addGroup('Rebounds', STAT_GROUPS.rebounds, 'rebounds');
+  addGroup('Other', STAT_GROUPS.other, 'other');
 
   container.querySelectorAll('input[type="checkbox"]').forEach(chk => {
     chk.addEventListener('change', () => {
-      const stat = chk.dataset.stat;
-      if (chk.checked) {
-        state.selectedStats.add(stat);
+      const groupKey = chk.dataset.group;
+      if (groupKey) {
+        const groupDef = groupDefs.find(g => g.key === groupKey);
+        if (!groupDef) return;
+        groupDef.stats.forEach(stat => setStatChecked(stat, chk.checked));
       } else {
-        state.selectedStats.delete(stat);
-        clearStatDerivedState(stat);
+        const stat = chk.dataset.stat;
+        setStatChecked(stat, chk.checked);
       }
+
       pruneHiddenColumnState();
       closeMetricMenu();
       closeColFilter();
       renderColFilterSummary();
+      renderStatCheckboxes();
       renderTable();
     });
   });
