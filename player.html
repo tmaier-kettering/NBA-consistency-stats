@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="NBA Consistency Stats — individual player histogram and consistency metrics." />
+  <title>Player Stats — NBA Consistency Stats</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html" aria-label="NBA Consistency Stats home">
+        <svg class="brand-logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="24" cy="24" r="22" fill="#C9082A" stroke="#F7A528" stroke-width="2"/>
+          <path d="M24 2 C17 10 17 20 17 24 C17 28 17 38 24 46" stroke="#F7A528" stroke-width="1.8" fill="none"/>
+          <path d="M24 2 C31 10 31 20 31 24 C31 28 31 38 24 46" stroke="#F7A528" stroke-width="1.8" fill="none"/>
+          <path d="M2 24 L46 24" stroke="#F7A528" stroke-width="1.8"/>
+          <path d="M4 16 Q24 11 44 16" stroke="#F7A528" stroke-width="1.2" fill="none"/>
+          <path d="M4 32 Q24 37 44 32" stroke="#F7A528" stroke-width="1.2" fill="none"/>
+        </svg>
+        <div class="brand-text">
+          <span class="brand-title">NBA Consistency Stats</span>
+          <span class="brand-subtitle">Player performance consistency ratings across seasons</span>
+        </div>
+      </a>
+
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="player.html" class="nav-link active">Players</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════ MAIN ════════════════════════════ -->
+  <main class="site-main">
+    <div class="player-main">
+
+      <!-- ── Player Search ── -->
+      <div class="player-search-section">
+        <h1 class="section-title">Player Stats</h1>
+        <div class="player-search-wrap">
+          <input
+            type="text"
+            class="player-search-input"
+            id="playerSearchInput"
+            placeholder="Search for a player…"
+            autocomplete="off"
+            aria-autocomplete="list"
+            aria-controls="playerAcDropdown"
+            aria-expanded="false"
+            aria-label="Search for a player"
+          />
+          <ul class="player-ac-dropdown" id="playerAcDropdown" role="listbox" aria-label="Player suggestions" hidden></ul>
+        </div>
+      </div>
+
+      <!-- ── Controls bar ── -->
+      <div class="player-controls-bar" id="playerControlsBar">
+
+        <div class="player-control-group">
+          <label for="playerSeasonSelect">Season</label>
+          <select class="player-control-select" id="playerSeasonSelect">
+            <option value="">Loading…</option>
+          </select>
+        </div>
+
+        <div class="player-control-group">
+          <label>Season Type</label>
+          <div class="season-type-toggle toggle-group" role="group" aria-label="Season type">
+            <button class="toggle-btn active" id="pBtnRegular" data-value="Regular Season">Regular Season</button>
+            <button class="toggle-btn"        id="pBtnPlayoffs" data-value="Playoffs">Playoffs</button>
+          </div>
+        </div>
+
+        <div class="player-control-group">
+          <label for="statSelect">Statistic</label>
+          <select class="player-control-select" id="statSelect">
+            <option value="PTS">Points (PTS)</option>
+            <option value="FGM">FGM</option>
+            <option value="FGA">FGA</option>
+            <option value="FG_PCT">FG%</option>
+            <option value="FG3M">3PM</option>
+            <option value="FG3_PCT">3P%</option>
+            <option value="FTM">FTM</option>
+            <option value="FTA">FTA</option>
+            <option value="FT_PCT">FT%</option>
+            <option value="OREB">OREB</option>
+            <option value="DREB">DREB</option>
+            <option value="REB">Rebounds (REB)</option>
+            <option value="AST">Assists (AST)</option>
+            <option value="STL">Steals (STL)</option>
+            <option value="BLK">Blocks (BLK)</option>
+            <option value="TOV">Turnovers (TOV)</option>
+            <option value="PF">Fouls (PF)</option>
+            <option value="MIN">Minutes (MIN)</option>
+            <option value="PLUS_MINUS">Plus/Minus (+/-)</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- ── Histogram + Stats panel ── -->
+      <div class="player-content-row" id="playerContentRow">
+
+        <!-- Histogram card -->
+        <div class="histogram-card">
+          <div class="histogram-title" id="histogramTitle">Select a player to view their histogram</div>
+
+          <div class="histogram-chart-wrap">
+            <canvas id="histogramCanvas" aria-label="Player stat distribution histogram" role="img"></canvas>
+            <div class="hist-empty" id="histEmpty">Select a player to get started</div>
+          </div>
+
+          <!-- Histogram controls -->
+          <div class="histogram-controls">
+
+            <div class="hist-ctrl-group">
+              <label>Bins</label>
+              <div class="hist-ctrl-row">
+                <select class="hist-ctrl-select" id="binModeSelect">
+                  <option value="count">Number of bins</option>
+                  <option value="width">Bin width</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="hist-ctrl-group" id="binCountGroup">
+              <label for="binCountInput">Bin count</label>
+              <input type="number" class="hist-ctrl-input" id="binCountInput" min="2" max="50" value="10" />
+            </div>
+
+            <div class="hist-ctrl-group" id="binWidthGroup" hidden>
+              <label for="binWidthInput">Bin width</label>
+              <input type="number" class="hist-ctrl-input" id="binWidthInput" min="0.01" step="0.5" value="5" />
+            </div>
+
+            <div class="hist-ctrl-group">
+              <label>X-axis limits</label>
+              <div class="hist-ctrl-row">
+                <input type="number" class="hist-ctrl-input" id="xMinInput" placeholder="Auto" step="any" aria-label="X-axis minimum" />
+                <span class="hist-ctrl-sep">–</span>
+                <input type="number" class="hist-ctrl-input" id="xMaxInput" placeholder="Auto" step="any" aria-label="X-axis maximum" />
+              </div>
+            </div>
+
+            <div class="hist-ctrl-group">
+              <label>Y-axis limit</label>
+              <div class="hist-ctrl-row">
+                <input type="number" class="hist-ctrl-input" id="yMaxInput" placeholder="Auto" min="1" step="1" aria-label="Y-axis maximum" />
+              </div>
+            </div>
+
+            <button class="btn-apply-hist" id="applyHistBtn">Apply</button>
+            <button class="btn-apply-hist" id="resetHistBtn" style="background:transparent;color:var(--color-primary);border:1px solid var(--color-border);">Reset</button>
+
+          </div>
+        </div>
+
+        <!-- Stats panel -->
+        <div class="stats-panel">
+          <div class="stats-panel-title" id="statsPanelTitle">Statistics</div>
+          <div class="stats-panel-grid" id="statsPanelGrid">
+            <p class="stat-metric-empty">Select a player and season to view stats.</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════ FOOTER ══════════════════════════ -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p class="footer-brand">NBA Consistency Stats</p>
+      <p class="footer-desc">
+        Consistency Rating (CR) = Average ÷ Standard Deviation.
+        A higher CR means a player performs more consistently game-to-game.
+        Data sourced from the NBA Stats API.
+      </p>
+      <nav class="footer-nav" aria-label="Footer navigation">
+        <a href="index.html">Home</a>
+        <a href="player.html">Players</a>
+      </nav>
+      <p class="footer-copy">&copy; <span id="footerYear"></span> NBA Consistency Stats. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="js/player.js"></script>
+</body>
+</html>

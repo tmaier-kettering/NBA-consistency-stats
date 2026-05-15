@@ -13,7 +13,7 @@ import webbrowser
 
 from nba_consistency_stats.config import DEFAULT_HOST, DEFAULT_PORT, VALID_SEASON_TYPES
 from nba_consistency_stats.database import SeasonAlreadyLoadedError
-from nba_consistency_stats.exporter import export_stats_to_json
+from nba_consistency_stats.exporter import export_game_logs_to_json, export_stats_to_json
 from nba_consistency_stats.models import SeasonSelection
 from nba_consistency_stats.service import ConsistencyStatsService
 
@@ -130,6 +130,11 @@ class AdminUiApp:
                 summary += f" {report.failed_player_count} player fetches were skipped after retries."
             self._update_status("Exporting stats.json for the website...")
             export_stats_to_json(
+                self.service.database.database_path,
+                progress_callback=self._update_status,
+            )
+            self._update_status("Exporting game logs for the website...")
+            export_game_logs_to_json(
                 self.service.database.database_path,
                 progress_callback=self._update_status,
             )

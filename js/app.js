@@ -84,6 +84,8 @@ const state = {
   sortDir:        'asc',         // 'asc' | 'desc'
 
   activeColFilterKey: null,      // which column the popover is open for
+
+  displayMode:    'cr',          // 'cr' | 'rank' | 'pct'
 };
 
 /* ══════════════════════════════════════════════
@@ -106,6 +108,10 @@ const els = {
   colFilterSummaryGrp: $('colFilterSummaryGroup'),
   colFilterSummary:    $('colFilterSummary'),
   clearAllFilters:     $('clearAllFilters'),
+
+  dmBtnCR:             $('dmBtnCR'),
+  dmBtnRank:           $('dmBtnRank'),
+  dmBtnPct:            $('dmBtnPct'),
 
   tabBtns:             document.querySelectorAll('.tab-btn'),
   rowCount:            $('rowCount'),
@@ -183,15 +189,44 @@ function getFilteredData() {
     players = players.filter(p => {
       const s = p.stats[stat];
       if (!s) return false;
-      const cr = s.cr;
-      if (cr === null || cr === undefined) return false;
-      if (min !== null && min !== '' && cr < min) return false;
-      if (max !== null && max !== '' && cr > max) return false;
+      const val = getDisplayValue(s);
+      if (val === null || val === undefined) return false;
+      if (min !== null && min !== '' && val < min) return false;
+      if (max !== null && max !== '' && val > max) return false;
       return true;
     });
   }
 
   return players;
+}
+
+
+/* ══════════════════════════════════════════════
+   DISPLAY MODE HELPERS
+   ══════════════════════════════════════════════ */
+
+/** Return the value shown in a table cell for the current display mode */
+function getDisplayValue(stat) {
+  if (!stat) return null;
+  if (state.displayMode === 'rank') return stat.rank ?? null;
+  if (state.displayMode === 'pct')  return stat.pct  ?? null;
+  return stat.cr ?? null;
+}
+
+/** Format a display value for text rendering */
+function formatDisplayValue(stat) {
+  const v = getDisplayValue(stat);
+  if (v === null || v === undefined) return null;
+  if (state.displayMode === 'cr')   return v.toFixed(2);
+  if (state.displayMode === 'rank') return `#${v}`;
+  return `${v}%`;
+}
+
+/** Update the Display-as button active states */
+function updateDisplayModeBtns() {
+  [els.dmBtnCR, els.dmBtnRank, els.dmBtnPct].forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === state.displayMode);
+  });
 }
 
 
@@ -212,9 +247,9 @@ function sortPlayers(players) {
     if (sortColumn === 'gp') {
       va = a.gp ?? 0; vb = b.gp ?? 0;
     } else {
-      const sa = a.stats[sortColumn]; const sb = b.stats[sortColumn];
-      va = sa ? (sa.cr ?? -Infinity) : -Infinity;
-      vb = sb ? (sb.cr ?? -Infinity) : -Infinity;
+      // Sort by the currently displayed value (CR, rank, or percentile)
+      va = getDisplayValue(a.stats[sortColumn]) ?? (state.displayMode === 'rank' ? Infinity : -Infinity);
+      vb = getDisplayValue(b.stats[sortColumn]) ?? (state.displayMode === 'rank' ? Infinity : -Infinity);
     }
     return mul * (va < vb ? -1 : va > vb ? 1 : 0);
   });
@@ -232,25 +267,27 @@ function buildColRanges(players, columns) {
     let mn = Infinity, mx = -Infinity;
     for (const p of players) {
       const s = p.stats[col];
-      if (s && s.cr !== null && s.cr !== undefined && s.cr >= 0) {
-        if (s.cr < mn) mn = s.cr;
-        if (s.cr > mx) mx = s.cr;
-      }
+      if (!s) continue;
+      const v = getDisplayValue(s);
+      if (v === null || v === undefined) continue;
+      // For CR/percentile higher = better; for rank lower = better — treat uniformly
+      if (v < mn) mn = v;
+      if (v > mx) mx = v;
     }
     ranges[col] = { min: mn === Infinity ? 0 : mn, max: mx === -Infinity ? 1 : mx };
   }
   return ranges;
 }
 
-/** Return a CSS background colour string for a CR value based on column range */
-function crColor(cr, range) {
-  if (cr === null || cr === undefined) return null;  // use .cr-null class
-  if (cr < 0) return null;  // use .cr-neg class
+/** Return a CSS background colour string for a display value based on column range */
+function crColor(value, range) {
+  if (value === null || value === undefined) return null;
   const { min, max } = range;
   const span = max - min;
-  const norm = span > 0 ? (cr - min) / span : 0.5;
+  let norm = span > 0 ? (value - min) / span : 0.5;
+  // For rank mode: lower rank = better, so invert the normalisation
+  if (state.displayMode === 'rank') norm = 1 - norm;
   // Red(0°) → Yellow(45°) → Green(120°)
-  // Map normalized value (0–1) to hue: 0° = red, 120° = green (HSL color wheel)
   const hue = Math.round(norm * 120);
   return `hsl(${hue}, 65%, 91%)`;
 }
@@ -382,8 +419,12 @@ function renderBody(players, columns, ranges) {
     // Player name cell
     const tdName = document.createElement('td');
     tdName.className = 'col-player';
-    tdName.textContent = player.name;
     tdName.title = player.name;
+    const playerLink = document.createElement('a');
+    playerLink.href = `player.html?player=${encodeURIComponent(player.name)}`;
+    playerLink.textContent = player.name;
+    playerLink.className = 'player-name-link';
+    tdName.appendChild(playerLink);
     tr.appendChild(tdName);
 
     // GP cell
@@ -397,17 +438,18 @@ function renderBody(players, columns, ranges) {
       const td = document.createElement('td');
       td.className = 'cr-cell';
       const stat = player.stats[col];
+      const displayVal = stat ? getDisplayValue(stat) : null;
 
-      if (!stat || stat.cr === null || stat.cr === undefined) {
+      if (!stat || displayVal === null || displayVal === undefined) {
         td.classList.add('cr-null');
         td.textContent = '—';
-      } else if (stat.cr < 0) {
+      } else if (state.displayMode === 'cr' && stat.cr < 0) {
         td.classList.add('cr-neg');
         td.textContent = stat.cr.toFixed(2);
       } else {
-        const bg = crColor(stat.cr, ranges[col]);
+        const bg = crColor(displayVal, ranges[col]);
         if (bg) td.style.backgroundColor = bg;
-        td.textContent = stat.cr.toFixed(2);
+        td.textContent = formatDisplayValue(stat);
       }
 
       // Cell tooltip
@@ -448,23 +490,30 @@ function handleSort(column) {
 function openColFilter(colKey, triggerEl) {
   state.activeColFilterKey = colKey;
 
-  // Title
-  els.cfpTitle.textContent = `Filter: ${COL_LABEL[colKey] ?? colKey} CR`;
+  // Title and label adapt to current display mode
+  const modeLabel = state.displayMode === 'cr' ? 'CR' : state.displayMode === 'rank' ? 'Rank' : 'Percentile';
+  els.cfpTitle.textContent = `Filter: ${COL_LABEL[colKey] ?? colKey} ${modeLabel}`;
+  const cfpMinLabel = els.colFilterPopover.querySelector('#cfpMin').previousElementSibling;
+  const cfpMaxLabel = els.colFilterPopover.querySelector('#cfpMax').previousElementSibling;
+  if (cfpMinLabel) cfpMinLabel.textContent = `Min`;
+  if (cfpMaxLabel) cfpMaxLabel.textContent = `Max`;
 
   // Pre-fill with existing values
   const existing = state.columnFilters[colKey] || {};
   els.cfpMin.value = existing.min ?? '';
   els.cfpMax.value = existing.max ?? '';
 
-  // Range hint: show min/max CR currently in data
+  // Range hint: show min/max of currently displayed value in data
   const players = getFilteredData();
   const values = players
-    .map(p => p.stats[colKey]?.cr)
+    .map(p => getDisplayValue(p.stats[colKey]))
     .filter(v => v !== null && v !== undefined);
   if (values.length) {
-    const lo = Math.min(...values).toFixed(2);
-    const hi = Math.max(...values).toFixed(2);
-    els.cfpRangeHint.textContent = `Data range: ${lo} – ${hi}`;
+    const lo = Math.min(...values);
+    const hi = Math.max(...values);
+    const fmt = state.displayMode === 'cr' ? v => v.toFixed(2) :
+                state.displayMode === 'rank' ? v => `#${v}` : v => `${v}%`;
+    els.cfpRangeHint.textContent = `Data range: ${fmt(lo)} – ${fmt(hi)}`;
   } else {
     els.cfpRangeHint.textContent = '';
   }
@@ -528,6 +577,8 @@ function renderColFilterSummary() {
   els.colFilterSummaryGrp.hidden = entries.length === 0;
   els.colFilterSummary.innerHTML = '';
 
+  const modeLabel = state.displayMode === 'cr' ? 'CR' : state.displayMode === 'rank' ? 'Rank' : 'Pct';
+
   for (const [col, { min, max }] of entries) {
     const label = COL_LABEL[col] ?? col;
     const lo = min !== null ? min : '…';
@@ -535,7 +586,7 @@ function renderColFilterSummary() {
     const li = document.createElement('li');
     li.className = 'col-filter-tag';
     li.innerHTML = `
-      <span>${label} CR: ${lo} – ${hi}</span>
+      <span>${label} ${modeLabel}: ${lo} – ${hi}</span>
       <button class="col-filter-tag-remove" aria-label="Remove ${label} filter" data-col="${col}">&#x2715;</button>`;
     els.colFilterSummary.appendChild(li);
   }
@@ -567,15 +618,17 @@ function showCellTooltip(playerName, colKey, stat, e) {
     els.cellTooltip.innerHTML =
       `<strong>${playerName}</strong><div class="tt-stat">No data available for ${COL_LABEL[colKey] ?? colKey}</div>`;
   } else {
-    const crStr  = stat.cr !== null ? stat.cr.toFixed(4) : 'N/A';
-    const avgStr = stat.avg.toFixed(4);
-    const stdStr = stat.std.toFixed(4);
-    const label  = COL_LABEL[colKey] ?? colKey;
+    const crStr   = stat.cr   !== null && stat.cr   !== undefined ? stat.cr.toFixed(4)  : 'N/A';
+    const avgStr  = stat.avg.toFixed(4);
+    const stdStr  = stat.std.toFixed(4);
+    const rankStr = stat.rank !== undefined ? `#${stat.rank}`    : 'N/A';
+    const pctStr  = stat.pct  !== undefined ? `${stat.pct}%`     : 'N/A';
+    const label   = COL_LABEL[colKey] ?? colKey;
     els.cellTooltip.innerHTML =
       `<strong>${playerName}</strong>
        <div class="tt-stat">${label} CR: <strong style="color:#f7a528">${crStr}</strong></div>
-       <div class="tt-stat">Avg: ${avgStr}</div>
-       <div class="tt-stat">Std Dev: ${stdStr}</div>`;
+       <div class="tt-stat">Rank: ${rankStr} &nbsp;|&nbsp; Percentile: ${pctStr}</div>
+       <div class="tt-stat">Avg: ${avgStr} &nbsp;|&nbsp; Std Dev: ${stdStr}</div>`;
   }
   els.cellTooltip.hidden      = false;
   els.cellTooltip.style.opacity = '1';
@@ -867,6 +920,18 @@ function bindEvents() {
     renderTable();
   });
 
+  // Display mode buttons
+  [els.dmBtnCR, els.dmBtnRank, els.dmBtnPct].forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.displayMode = btn.dataset.mode;
+      updateDisplayModeBtns();
+      // Clear column filters when switching display mode (values are in different scales)
+      state.columnFilters = {};
+      renderColFilterSummary();
+      renderTable();
+    });
+  });
+
   // Clear all
   els.clearAllFilters.addEventListener('click', clearAllFilters);
 
@@ -901,6 +966,7 @@ async function init() {
 
   populateSeasonSelect();
   updateSeasonTypeBtns();
+  updateDisplayModeBtns();
   resetGpRange();
   bindEvents();
   renderColFilterSummary();
