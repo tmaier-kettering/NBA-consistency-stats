@@ -107,26 +107,16 @@
           <ul class="col-filter-summary" id="colFilterSummary" aria-label="Active column filters"></ul>
         </div>
 
-        <!-- Display mode -->
+        <!-- Stat columns -->
         <div class="filter-group">
-          <label class="filter-label">Display as…</label>
-          <div class="display-mode-group" role="group" aria-label="Display mode">
-            <button class="display-mode-btn active" id="dmBtnCR"   data-mode="cr">CR</button>
-            <button class="display-mode-btn"        id="dmBtnRank" data-mode="rank">Rank</button>
-            <button class="display-mode-btn"        id="dmBtnPct"  data-mode="pct">Percentile</button>
-          </div>
+          <label class="filter-label">Displayed Stats</label>
+          <div class="stat-checkbox-list" id="statCheckboxList" role="group" aria-label="Displayed stats"></div>
         </div>
       </aside>
 
       <!-- ───────────── CONTENT AREA ───────────── -->
       <section class="content-area">
         <div class="content-top-bar">
-          <!-- Tabs -->
-          <div class="tabs-bar" role="tablist" aria-label="Stat categories">
-            <button class="tab-btn active" role="tab" aria-selected="true"  data-tab="scoring"  id="tab-scoring">Scoring</button>
-            <button class="tab-btn"         role="tab" aria-selected="false" data-tab="rebounds" id="tab-rebounds">Rebounds</button>
-            <button class="tab-btn"         role="tab" aria-selected="false" data-tab="other"    id="tab-other">Other</button>
-          </div>
           <p class="row-count" id="rowCount" aria-live="polite"></p>
         </div>
 
@@ -185,11 +175,11 @@
     </div>
     <div class="cfp-body">
       <div class="cfp-row">
-        <label class="cfp-label" for="cfpMin">Min CR</label>
+        <label class="cfp-label" for="cfpMin">Min</label>
         <input type="number" class="cfp-input" id="cfpMin" step="0.01" placeholder="No min" />
       </div>
       <div class="cfp-row">
-        <label class="cfp-label" for="cfpMax">Max CR</label>
+        <label class="cfp-label" for="cfpMax">Max</label>
         <input type="number" class="cfp-input" id="cfpMax" step="0.01" placeholder="No max" />
       </div>
       <p class="cfp-range-hint" id="cfpRangeHint"></p>
@@ -200,6 +190,7 @@
     </div>
   </div>
   <div class="popover-backdrop" id="popoverBackdrop" hidden></div>
+  <div class="metric-menu" id="metricMenu" role="menu" aria-label="Add associated columns" hidden></div>
 
   <script src="js/app.js"></script>
 </body>

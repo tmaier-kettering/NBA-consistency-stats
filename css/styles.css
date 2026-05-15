@@ -429,6 +429,40 @@ ul { list-style: none; }
 }
 .col-filter-tag-remove:hover { color: var(--color-danger); }
 
+/* Stat checkboxes */
+.stat-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+}
+.stat-checkbox-group-title {
+  margin-top: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-light);
+}
+.stat-checkbox-group-title:first-child { margin-top: 0; }
+.stat-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+.stat-checkbox-item input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--color-primary);
+}
+
 
 /* ══════════════════════════════════════════════
    CONTENT AREA
@@ -444,35 +478,12 @@ ul { list-style: none; }
 .content-top-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   padding: 14px 20px 0;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
-}
-
-/* Tabs */
-.tabs-bar {
-  display: flex;
-  gap: 4px;
-}
-.tab-btn {
-  padding: 9px 20px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  border: none;
-  background: none;
-  color: var(--color-text-muted);
-  border-bottom: 3px solid transparent;
-  border-radius: 0;
-  transition: color 0.15s, border-color 0.15s;
-  white-space: nowrap;
-}
-.tab-btn:hover { color: var(--color-primary); }
-.tab-btn.active {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-accent);
 }
 
 /* Row count */
@@ -541,6 +552,24 @@ ul { list-style: none; }
   border-bottom: 2px solid var(--color-accent);
   border-right: 1px solid rgba(255,255,255,.08);
 }
+.stats-table th.stat-group-th {
+  height: 26px;
+  text-align: center;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: #12294b;
+  border-bottom: 1px solid rgba(255,255,255,.12);
+}
+.stats-table th.metric-th {
+  border-bottom: 2px solid var(--color-accent);
+}
+.stats-table th.metric-th.group-start {
+  border-left: 2px solid var(--color-accent);
+}
+.stats-table th.metric-th.group-end {
+  border-right: 2px solid var(--color-accent);
+}
 /* Player-name sticky column header */
 .stats-table th.col-player {
   position: sticky;
@@ -557,6 +586,7 @@ ul { list-style: none; }
   align-items: stretch;
   height: 44px;
 }
+.th-inner-simple .th-label { padding-right: 12px; }
 .th-label {
   flex: 1;
   display: flex;
@@ -579,16 +609,18 @@ ul { list-style: none; }
   flex-shrink: 0;
 }
 .sort-icon svg { display: block; }
-th.sort-asc  .sort-icon,
-th.sort-desc .sort-icon { opacity: 1; }
-th.sort-asc  .sort-asc-arrow  { opacity: 1; }
-th.sort-desc .sort-desc-arrow { opacity: 1; }
-th.sort-asc  .sort-desc-arrow { opacity: 0.25; }
-th.sort-desc .sort-asc-arrow  { opacity: 0.25; }
+.stats-table th.sort-asc  .sort-icon,
+.stats-table th.sort-desc .sort-icon { opacity: 1; }
+.stats-table th.sort-asc  .sort-asc-arrow  { opacity: 1; }
+.stats-table th.sort-desc .sort-desc-arrow { opacity: 1; }
+.stats-table th.sort-asc  .sort-desc-arrow { opacity: 0.25; }
+.stats-table th.sort-desc .sort-asc-arrow  { opacity: 0.25; }
 
-/* Filter button in header */
-.th-filter-btn {
+.th-actions {
   display: flex;
+}
+.th-action-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 28px;
@@ -598,10 +630,15 @@ th.sort-desc .sort-asc-arrow  { opacity: 0.25; }
   color: rgba(255,255,255,.5);
   transition: color 0.12s, background 0.12s;
   border-left: 1px solid rgba(255,255,255,.08);
+  font-size: 0.95rem;
+  line-height: 1;
 }
-.th-filter-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
+.th-action-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
+.th-filter-btn svg { display: block; }
 .th-filter-btn.active { color: var(--color-accent); }
-.th-filter-btn.active svg path { fill: var(--color-accent); }
+.th-filter-btn.active svg path { stroke: var(--color-accent); }
+.th-add-btn { font-weight: 700; }
+.th-remove-btn { font-size: 1.05rem; }
 
 /* ── BODY ── */
 .stats-table tbody tr {
@@ -645,14 +682,16 @@ th.sort-desc .sort-asc-arrow  { opacity: 0.25; }
 }
 
 /* CR value cells */
-.stats-table td.cr-cell {
+.stats-table td.metric-cell {
   cursor: default;
   min-width: 68px;
   font-family: var(--font-mono);
   font-size: 0.8rem;
   transition: filter 0.1s;
 }
-.stats-table tbody tr:hover td.cr-cell { filter: brightness(0.95); }
+.stats-table td.metric-cell.group-start { border-left: 2px solid #dbe5f1; }
+.stats-table td.metric-cell.group-end { border-right: 2px solid #dbe5f1; }
+.stats-table tbody tr:hover td.metric-cell { filter: brightness(0.95); }
 
 .cr-null  { background: var(--cr-null);  color: var(--color-text-muted); }
 .cr-neg   { background: #fff0f3;         color: #9b1a2a; font-style: italic; }
@@ -695,6 +734,36 @@ th.sort-desc .sort-asc-arrow  { opacity: 0.25; }
   box-shadow: var(--shadow-lg);
   width: 240px;
   overflow: hidden;
+}
+
+.metric-menu {
+  position: fixed;
+  z-index: 450;
+  width: 196px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+.metric-menu-item {
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: none;
+  border-bottom: 1px solid var(--color-border-light);
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  color: var(--color-text);
+}
+.metric-menu-item:last-child { border-bottom: none; }
+.metric-menu-item:hover {
+  background: var(--color-row-hover);
+}
+.metric-menu-empty {
+  padding: 10px;
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
 }
 .cfp-header {
   display: flex;
@@ -815,39 +884,6 @@ th.sort-desc .sort-asc-arrow  { opacity: 0.25; }
 .player-name-link:hover {
   color: var(--color-primary-light);
   text-decoration: underline;
-}
-
-
-/* ══════════════════════════════════════════════
-   DISPLAY MODE BUTTONS
-   ══════════════════════════════════════════════ */
-.display-mode-group {
-  display: flex;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-.display-mode-btn {
-  flex: 1;
-  padding: 7px 6px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  background: #fff;
-  border: none;
-  color: var(--color-text-muted);
-  transition: background 0.15s, color 0.15s;
-  text-align: center;
-}
-.display-mode-btn:not(:last-child) {
-  border-right: 1px solid var(--color-border);
-}
-.display-mode-btn.active {
-  background: var(--color-primary);
-  color: #fff;
-}
-.display-mode-btn:not(.active):hover {
-  background: var(--color-row-alt);
-  color: var(--color-text);
 }
 
 
