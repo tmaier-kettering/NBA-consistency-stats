@@ -8,7 +8,7 @@ import re
 
 from nba_consistency_stats.config import VALID_SEASON_TYPES
 
-SEASON_PATTERN = re.compile(r"^(\d{4})-(\d{2})$")
+NBA_SEASON_FORMAT_PATTERN = re.compile(r"^(\d{4})-(\d{2})$")
 
 
 @dataclass(frozen=True)
@@ -23,7 +23,7 @@ class SeasonSelection:
         normalized_season = season.strip()
         normalized_type = season_type.strip()
 
-        match = SEASON_PATTERN.fullmatch(normalized_season)
+        match = NBA_SEASON_FORMAT_PATTERN.fullmatch(normalized_season)
         if not match:
             raise ValueError("Season must use the YYYY-YY format, for example 2024-25.")
 

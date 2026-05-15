@@ -8,7 +8,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Lock, Thread
 from typing import Callable
-from urllib.parse import parse_qs, urlencode, urlparse
+from urllib.parse import parse_qs
 import webbrowser
 
 from nba_consistency_stats.config import DEFAULT_HOST, DEFAULT_PORT, VALID_SEASON_TYPES
@@ -26,6 +26,8 @@ class JobState:
     status_message: str = "Idle"
     result_message: str = ""
     error_message: str = ""
+    season_value: str = ""
+    season_type_value: str = VALID_SEASON_TYPES[0]
 
 
 class AdminUiApp:
@@ -68,11 +70,7 @@ class AdminUiApp:
         return AdminUiHandler
 
     def _handle_get(self, handler: BaseHTTPRequestHandler) -> None:
-        parsed = urlparse(handler.path)
-        params = parse_qs(parsed.query)
-        season_value = params.get("season", [""])[0]
-        season_type_value = params.get("season_type", [VALID_SEASON_TYPES[0]])[0]
-        html = self._render_page(season_value=season_value, season_type_value=season_type_value)
+        html = self._render_page()
         body = html.encode("utf-8")
         handler.send_response(HTTPStatus.OK)
         handler.send_header("Content-Type", "text/html; charset=utf-8")
@@ -94,15 +92,22 @@ class AdminUiApp:
         try:
             selection = SeasonSelection.from_user_input(season_value, season_type_value)
         except ValueError as error:
-            self._set_state(error_message=str(error), result_message="")
-            self._redirect(handler, f"/?season={season_value}&season_type={season_type_value}")
+            self._set_state(
+                error_message=str(error),
+                result_message="",
+                season_value=season_value,
+                season_type_value=season_type_value,
+            )
+            self._redirect(handler, "/")
             return
 
         with self._lock:
+            self.state.season_value = selection.season
+            self.state.season_type_value = selection.season_type
             if self.state.is_running:
                 self.state.error_message = "Another season load is already running."
                 self.state.result_message = ""
-                self._redirect(handler, self._build_redirect_location(selection))
+                self._redirect(handler, "/")
                 return
             self.state.is_running = True
             self.state.selection_label = f"{selection.season} ({selection.season_type})"
@@ -111,7 +116,7 @@ class AdminUiApp:
             self.state.error_message = ""
 
         Thread(target=self._load_selection_in_background, args=(selection,), daemon=True).start()
-        self._redirect(handler, self._build_redirect_location(selection))
+        self._redirect(handler, "/")
 
     def _load_selection_in_background(self, selection: SeasonSelection) -> None:
         try:
@@ -137,14 +142,25 @@ class AdminUiApp:
         with self._lock:
             self.state.status_message = message
 
-    def _set_state(self, *, error_message: str, result_message: str) -> None:
+    def _set_state(
+        self,
+        *,
+        error_message: str,
+        result_message: str,
+        season_value: str | None = None,
+        season_type_value: str | None = None,
+    ) -> None:
         with self._lock:
             self.state.error_message = error_message
             self.state.result_message = result_message
+            if season_value is not None:
+                self.state.season_value = season_value
+            if season_type_value is not None:
+                self.state.season_type_value = season_type_value
             if not self.state.is_running:
                 self.state.status_message = "Idle"
 
-    def _render_page(self, *, season_value: str, season_type_value: str) -> str:
+    def _render_page(self) -> str:
         seasons = self.service.list_loaded_seasons()
         with self._lock:
             state = JobState(
@@ -153,6 +169,8 @@ class AdminUiApp:
                 status_message=self.state.status_message,
                 result_message=self.state.result_message,
                 error_message=self.state.error_message,
+                season_value=self.state.season_value,
+                season_type_value=self.state.season_type_value,
             )
 
         rows_html = "".join(
@@ -170,7 +188,7 @@ class AdminUiApp:
         ) or '<tr><td colspan="6">No seasons have been loaded yet.</td></tr>'
 
         season_type_options = "".join(
-            f'<option value="{escape(option)}" {"selected" if option == season_type_value else ""}>{escape(option)}</option>'
+            f'<option value="{escape(option)}" {"selected" if option == state.season_type_value else ""}>{escape(option)}</option>'
             for option in VALID_SEASON_TYPES
         )
 
@@ -219,14 +237,14 @@ class AdminUiApp:
             <main>
                 <section class="card">
                     <h1>NBA Consistency Stats Admin</h1>
-                    <p>Run this file from PyCharm or the terminal, then manage season loads in the browser window that opens automatically.</p>
+                    <p>Run <code>main.py</code> from PyCharm or the terminal, then manage season loads in the browser window that opens automatically.</p>
                     {status_banner}
                     {result_banner}
                     {error_banner}
                     <form method="post" action="/load-season">
                         <label>
                             Season
-                            <input name="season" value="{escape(season_value)}" placeholder="2024-25" required {disabled_attribute}>
+                            <input name="season" value="{escape(state.season_value)}" placeholder="2024-25" required {disabled_attribute}>
                         </label>
                         <label>
                             Season type
@@ -265,11 +283,6 @@ class AdminUiApp:
         handler.send_response(HTTPStatus.SEE_OTHER)
         handler.send_header("Location", location)
         handler.end_headers()
-
-    @staticmethod
-    def _build_redirect_location(selection: SeasonSelection) -> str:
-        return f"/?{urlencode({'season': selection.season, 'season_type': selection.season_type})}"
-
 
 def launch_admin_ui(
     service: ConsistencyStatsService,
