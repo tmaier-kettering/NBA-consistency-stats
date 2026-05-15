@@ -7,11 +7,12 @@ so you only need to run this script manually if you modify the database directly
 """
 
 from nba_consistency_stats.config import DEFAULT_DATABASE_PATH
-from nba_consistency_stats.exporter import export_stats_to_json
+from nba_consistency_stats.exporter import export_game_logs_to_json, export_stats_to_json
 
 
 def export() -> None:
     export_stats_to_json(DEFAULT_DATABASE_PATH, progress_callback=print)
+    export_game_logs_to_json(DEFAULT_DATABASE_PATH, progress_callback=print)
 
 
 if __name__ == "__main__":

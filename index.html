@@ -35,6 +35,7 @@
 
       <nav class="main-nav" aria-label="Main navigation">
         <a href="index.html" class="nav-link active">Home</a>
+        <a href="player.html" class="nav-link">Players</a>
       </nav>
     </div>
   </header>
@@ -105,6 +106,16 @@
           <label class="filter-label">Column Filters</label>
           <ul class="col-filter-summary" id="colFilterSummary" aria-label="Active column filters"></ul>
         </div>
+
+        <!-- Display mode -->
+        <div class="filter-group">
+          <label class="filter-label">Display as…</label>
+          <div class="display-mode-group" role="group" aria-label="Display mode">
+            <button class="display-mode-btn active" id="dmBtnCR"   data-mode="cr">CR</button>
+            <button class="display-mode-btn"        id="dmBtnRank" data-mode="rank">Rank</button>
+            <button class="display-mode-btn"        id="dmBtnPct"  data-mode="pct">Percentile</button>
+          </div>
+        </div>
       </aside>
 
       <!-- ───────────── CONTENT AREA ───────────── -->
@@ -150,6 +161,10 @@
         A higher CR means a player performs more consistently game-to-game.
         Data sourced from the NBA Stats API.
       </p>
+      <nav class="footer-nav" aria-label="Footer navigation">
+        <a href="index.html">Home</a>
+        <a href="player.html">Players</a>
+      </nav>
       <p class="footer-copy">&copy; <span id="footerYear"></span> NBA Consistency Stats. All rights reserved.</p>
     </div>
   </footer>
