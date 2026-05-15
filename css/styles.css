@@ -1012,6 +1012,13 @@ ul { list-style: none; }
   font-size: 0.82rem;
   color: var(--color-text-muted);
 }
+.concept-diagram {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  border-radius: var(--radius-sm);
+  background: #f7f9fc;
+}
 
 .consistency-case-study {
   display: flex;

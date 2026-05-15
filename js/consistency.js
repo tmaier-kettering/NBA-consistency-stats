@@ -39,30 +39,6 @@ function formatTwoDecimals(value) {
   return Number.isFinite(value) ? value.toFixed(2) : '—';
 }
 
-function erf(x) {
-  const sign = x < 0 ? -1 : 1;
-  const ax = Math.abs(x);
-  const a1 = 0.254829592;
-  const a2 = -0.284496736;
-  const a3 = 1.421413741;
-  const a4 = -1.453152027;
-  const a5 = 1.061405429;
-  const p = 0.3275911;
-  const t = 1 / (1 + p * ax);
-  const y = 1 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax));
-  return sign * y;
-}
-
-function normalCdf(x, mean, std) {
-  if (!Number.isFinite(x) || !Number.isFinite(mean) || !Number.isFinite(std) || std <= 0) {
-    if (x < mean) return 0;
-    if (x > mean) return 1;
-    return 0.5;
-  }
-  const z = (x - mean) / (std * Math.sqrt(2));
-  return 0.5 * (1 + erf(z));
-}
-
 function computeBins(values, xMin, xMax, binCount) {
   if (!values?.length || xMin >= xMax || binCount < 2) return [];
   const width = (xMax - xMin) / binCount;
@@ -78,20 +54,6 @@ function computeBins(values, xMin, xMax, binCount) {
   }
 
   return bins;
-}
-
-function computeNormalTrendline(values, bins) {
-  if (!values?.length || !bins?.length) return [];
-  const n = values.length;
-  const mean = values.reduce((sum, v) => sum + v, 0) / n;
-  const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / n;
-  const std = Math.sqrt(variance);
-  if (!Number.isFinite(std) || std <= 0) return [];
-
-  return bins.map(bin => {
-    const p = Math.max(0, normalCdf(bin.x1, mean, std) - normalCdf(bin.x0, mean, std));
-    return p * n;
-  });
 }
 
 function destroyChart() {
