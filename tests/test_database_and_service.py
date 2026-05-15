@@ -1,4 +1,5 @@
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 
@@ -11,16 +12,19 @@ class FakeClient:
     def __init__(self):
         self.list_calls = []
         self.log_calls = []
+        self._lock = threading.Lock()
 
     def list_players_for_season(self, selection):
-        self.list_calls.append(selection.key)
+        with self._lock:
+            self.list_calls.append(selection.key)
         return [
             PlayerRef(player_id=1, player_name="Alice Scorer"),
             PlayerRef(player_id=2, player_name="Bob Rebounder"),
         ]
 
     def fetch_player_game_log(self, player, selection):
-        self.log_calls.append((player.player_id, selection.key))
+        with self._lock:
+            self.log_calls.append((player.player_id, selection.key))
         if player.player_id == 2:
             raise RuntimeError("temporary timeout")
         return [
@@ -62,6 +66,34 @@ class DatabaseAndServiceTests(unittest.TestCase):
             self.service.load_season(selection)
 
         self.assertEqual(len(self.service.client.list_calls), initial_list_calls)
+
+    def test_concurrent_load_fetches_all_players_and_preserves_order(self):
+        """Concurrent fetching still saves successful players and tracks failures."""
+        selection = SeasonSelection.from_user_input("2023-24", "Regular Season")
+        client = FakeClient()
+        service = ConsistencyStatsService(database=self.database, client=client, max_workers=2)
+
+        report = service.load_season(selection)
+
+        self.assertEqual(report.player_count, 1)
+        self.assertEqual(report.failed_player_count, 1)
+        # Both players were attempted (order may vary due to concurrency).
+        fetched_ids = sorted(pid for pid, _ in client.log_calls)
+        self.assertEqual(fetched_ids, [1, 2])
+
+    def test_progress_callback_receives_updates_during_concurrent_load(self):
+        """Progress messages are emitted for initial listing, per-player fetches, and save."""
+        selection = SeasonSelection.from_user_input("2023-24", "Playoffs")
+        messages = []
+        service = ConsistencyStatsService(
+            database=self.database, client=FakeClient(), max_workers=2
+        )
+
+        service.load_season(selection, progress_callback=messages.append)
+
+        self.assertTrue(any("Finding players" in m for m in messages))
+        self.assertTrue(any("Fetching game logs" in m for m in messages))
+        self.assertTrue(any("Saved" in m for m in messages))
 
 
 if __name__ == "__main__":
