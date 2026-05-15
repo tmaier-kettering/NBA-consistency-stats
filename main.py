@@ -67,7 +67,7 @@ def fetch_player_log(player_id, season="2024-25", max_retries=5, timeout=60):
 results = []
 failures = []
 
-for i, row in enumerate(players_last_season_unique.itertuples(index=False), start=1):
+for i, row in enumerate(players_last_season_unique.head(5).itertuples(index=False), start=1):
     player_id = int(row.PLAYER_ID)
     player_name = row.PLAYER_NAME
 
@@ -79,8 +79,8 @@ for i, row in enumerate(players_last_season_unique.itertuples(index=False), star
         # Identify numeric columns
         numeric_cols = log.select_dtypes(include="number").columns.tolist()
 
-        # Exclude Player_ID
-        numeric_cols = [col for col in numeric_cols if col != "Player_ID"]
+        # Exclude Player_ID and Video Available
+        numeric_cols = [col for col in numeric_cols if col != "Player_ID" and col != "VIDEO_AVAILABLE"]
 
         player_result = {
             "PLAYER_ID": player_id,
@@ -96,9 +96,9 @@ for i, row in enumerate(players_last_season_unique.itertuples(index=False), star
             player_result[f"{col}_STD"] = std_val
 
             if pd.isna(avg_val) or avg_val == 0:
-                player_result[f"{col}_CoV"] = None
+                player_result[f"{col}_CR"] = None
             else:
-                player_result[f"{col}_CoV"] = std_val / avg_val
+                player_result[f"{col}_CR"] = avg_val / std_val
 
         results.append(player_result)
 
@@ -111,7 +111,7 @@ for i, row in enumerate(players_last_season_unique.itertuples(index=False), star
         })
 
     # Small delay to be polite to the API
-    time.sleep(0.6 + random.uniform(0, 0.4))
+    time.sleep(0.3 + random.uniform(0, 0.4))
 
     # Save checkpoint every 10 players
     if i % 10 == 0:
