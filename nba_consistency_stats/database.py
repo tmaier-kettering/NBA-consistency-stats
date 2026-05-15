@@ -1,7 +1,8 @@
-"""SQLite persistence layer for season summaries."""
+"""SQLite persistence layer for season summaries and individual game logs."""
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
@@ -55,6 +56,21 @@ class ConsistencyDatabase:
 
                 CREATE INDEX IF NOT EXISTS idx_player_consistency_lookup
                     ON player_consistency_stats (season, season_type, player_name, stat_name);
+
+                CREATE TABLE IF NOT EXISTS player_game_logs (
+                    season TEXT NOT NULL,
+                    season_type TEXT NOT NULL,
+                    player_id INTEGER NOT NULL,
+                    game_id TEXT NOT NULL,
+                    row_json TEXT NOT NULL,
+                    PRIMARY KEY (season, season_type, player_id, game_id),
+                    FOREIGN KEY (season, season_type)
+                        REFERENCES season_loads (season, season_type)
+                        ON DELETE CASCADE
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_game_logs_player
+                    ON player_game_logs (season, season_type, player_id);
                 """
             )
 
@@ -105,8 +121,14 @@ class ConsistencyDatabase:
         selection: SeasonSelection,
         player_summaries: list[PlayerConsistencySummary],
         failed_player_count: int,
+        game_logs: list[tuple[int, list[dict[str, object]]]] | None = None,
     ) -> None:
-        """Persist one loaded season and all calculated player stats."""
+        """Persist one loaded season, all calculated player stats, and raw game logs.
+
+        ``game_logs`` is a list of ``(player_id, rows)`` pairs where each row is a
+        raw dict from the NBA API game-log endpoint.  Pass ``None`` (the default) to
+        skip game-log storage — existing seasons without log data are unaffected.
+        """
 
         stat_count = sum(len(summary.statistics) for summary in player_summaries)
         loaded_at = datetime.now(UTC).isoformat(timespec="seconds")
@@ -163,6 +185,34 @@ class ConsistencyDatabase:
                         for stat in summary.statistics
                     ],
                 )
+
+                if game_logs:
+                    log_rows = []
+                    for player_id, rows in game_logs:
+                        for row in rows:
+                            game_id = str(row.get("Game_ID") or row.get("GAME_ID") or "").strip()
+                            if not game_id:
+                                continue  # skip rows with no identifiable game ID
+                            log_rows.append((
+                                selection.season,
+                                selection.season_type,
+                                player_id,
+                                game_id,
+                                json.dumps(row),
+                            ))
+                    if log_rows:
+                        connection.executemany(
+                            """
+                            INSERT OR IGNORE INTO player_game_logs (
+                                season,
+                                season_type,
+                                player_id,
+                                game_id,
+                                row_json
+                            ) VALUES (?, ?, ?, ?, ?)
+                            """,
+                            log_rows,
+                        )
         except sqlite3.IntegrityError as error:
             raise SeasonAlreadyLoadedError(
                 f"{selection.season} ({selection.season_type}) is already stored in the database."

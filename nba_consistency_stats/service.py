@@ -48,6 +48,7 @@ class ConsistencyStatsService:
 
         summaries = []
         failed_players: list[str] = []
+        game_logs: list[tuple[int, list[dict[str, object]]]] = []
         total_players = len(players)
 
         for index, player in enumerate(players, start=1):
@@ -55,6 +56,7 @@ class ConsistencyStatsService:
             try:
                 game_log_rows = self.client.fetch_player_game_log(player, selection)
                 summaries.append(build_player_summary(player, game_log_rows))
+                game_logs.append((player.player_id, game_log_rows))
             except Exception as error:
                 failed_players.append(self._format_player_error(player, error))
                 progress(f"Skipping {player.player_name}: {error}")
@@ -66,6 +68,7 @@ class ConsistencyStatsService:
             selection=selection,
             player_summaries=summaries,
             failed_player_count=len(failed_players),
+            game_logs=game_logs,
         )
         progress(f"Saved {selection.season} ({selection.season_type}) to the database.")
 
