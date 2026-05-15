@@ -156,7 +156,15 @@
 
             <button class="btn-apply-hist" id="applyHistBtn">Apply</button>
             <button class="btn-apply-hist" id="resetHistBtn" style="background:transparent;color:var(--color-primary);border:1px solid var(--color-border);">Reset</button>
-            <button class="btn-apply-hist" id="comparePlayerBtn" style="background:#ffffff;color:var(--color-primary);border:1px solid var(--color-border);">Compare Player</button>
+            <div class="hist-ctrl-group hist-ctrl-group-compare">
+              <label for="comparePlayerSelect">Compare Player</label>
+              <div class="hist-ctrl-row">
+                <select class="hist-ctrl-select" id="comparePlayerSelect">
+                  <option value="">Select player…</option>
+                </select>
+                <button class="btn-apply-hist" id="comparePlayerBtn" style="background:#ffffff;color:var(--color-primary);border:1px solid var(--color-border);">Compare Selected</button>
+              </div>
+            </div>
 
             <div class="hist-ctrl-group hist-ctrl-group-toggle">
               <label class="hist-toggle-label" for="normalTrendlineToggle">

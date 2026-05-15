@@ -1131,6 +1131,9 @@ ul { list-style: none; }
   min-height: 30px;
   justify-content: flex-end;
 }
+.hist-ctrl-group-compare .hist-ctrl-row {
+  gap: 8px;
+}
 .hist-toggle-label {
   display: inline-flex;
   align-items: center;
@@ -1145,6 +1148,9 @@ ul { list-style: none; }
   width: 14px;
   height: 14px;
   accent-color: var(--color-primary);
+}
+#comparePlayerSelect {
+  min-width: 170px;
 }
 .hist-empty {
   display: flex;

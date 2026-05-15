@@ -1157,7 +1157,7 @@ function renderStatCheckboxes() {
 
     const heading = document.createElement('div');
     heading.className = 'stat-checkbox-group-title';
-    heading.textContent = `${title} Stats`;
+    heading.textContent = title;
     container.appendChild(heading);
     stats.forEach(addStatOption);
   };

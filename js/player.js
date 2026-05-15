@@ -77,6 +77,7 @@ const els = {
   yMaxInput:           $('yMaxInput'),
   applyHistBtn:        $('applyHistBtn'),
   resetHistBtn:        $('resetHistBtn'),
+  comparePlayerSelect: $('comparePlayerSelect'),
   comparePlayerBtn:    $('comparePlayerBtn'),
   normalTrendlineToggle: $('normalTrendlineToggle'),
 
@@ -191,8 +192,42 @@ function updateCompareButtonLabel() {
   if (state.comparePlayer) {
     els.comparePlayerBtn.textContent = `Remove Compare (${state.comparePlayer.name})`;
   } else {
-    els.comparePlayerBtn.textContent = 'Compare Player';
+    els.comparePlayerBtn.textContent = 'Compare Selected';
   }
+  const hasPrimary = !!state.selectedPlayer;
+  const hasSelection = !!els.comparePlayerSelect?.value;
+  els.comparePlayerBtn.disabled = !hasPrimary || (!state.comparePlayer && !hasSelection);
+}
+
+function populateComparePlayerSelect() {
+  if (!els.comparePlayerSelect) return;
+  const players = getCurrentSeasonPlayers()
+    .map(p => p.name)
+    .sort((a, b) => a.localeCompare(b));
+  const selectedName = state.selectedPlayer?.name || '';
+  const compareName = state.comparePlayer?.name || '';
+
+  els.comparePlayerSelect.innerHTML = '';
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = selectedName ? 'Select player…' : 'Select primary player first';
+  els.comparePlayerSelect.appendChild(placeholder);
+
+  players
+    .filter(name => name !== selectedName)
+    .forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      els.comparePlayerSelect.appendChild(opt);
+    });
+
+  if (compareName && players.includes(compareName) && compareName !== selectedName) {
+    els.comparePlayerSelect.value = compareName;
+  } else {
+    els.comparePlayerSelect.value = '';
+  }
+  updateCompareButtonLabel();
 }
 
 function escHtml(str) {
@@ -298,8 +333,8 @@ async function refreshView() {
 
   if (state.comparePlayer && !findCurrentSeasonPlayerByName(state.comparePlayer.name)) {
     state.comparePlayer = null;
-    updateCompareButtonLabel();
   }
+  populateComparePlayerSelect();
 
   renderHistogram();
   renderStatsPanel();
@@ -359,15 +394,25 @@ function computeBinsFromEdges(values, edges) {
   return bins;
 }
 
+/**
+ * Approximate Normal(μ, σ) cumulative probability P(X <= x).
+ * @param {number} x Value to evaluate.
+ * @param {number} mean Distribution mean (μ).
+ * @param {number} std Distribution standard deviation (σ).
+ * @returns {number} Probability in [0, 1].
+ */
 function normalCdf(x, mean, std) {
   if (!Number.isFinite(x) || !Number.isFinite(mean) || !Number.isFinite(std) || std <= 0) {
-    return x < mean ? 0 : 1;
+    if (x < mean) return 0;
+    if (x > mean) return 1;
+    return 0.5;
   }
   const z = (x - mean) / (std * Math.sqrt(2));
   return 0.5 * (1 + erf(z));
 }
 
 function erf(x) {
+  // Abramowitz & Stegun 7.1.26 approximation coefficients for erf(x).
   const sign = x < 0 ? -1 : 1;
   const ax = Math.abs(x);
   const a1 = 0.254829592;
@@ -389,7 +434,8 @@ function computeNormalTrendline(values, bins) {
   const std = Math.sqrt(variance);
 
   if (!Number.isFinite(std) || std <= 0) {
-    return bins.map(bin => (mean >= bin.x0 && mean <= bin.x1 ? n : 0));
+    const edges = [...bins.map(bin => bin.x0), bins[bins.length - 1].x1];
+    return computeBinsFromEdges(values, edges).map(bin => bin.count);
   }
 
   return bins.map(bin => {
@@ -665,6 +711,7 @@ function bindEvents() {
   els.playerSeasonSelect.addEventListener('change', async () => {
     state.currentSeason = els.playerSeasonSelect.value;
     await refreshView();
+    updateCompareButtonLabel();
   });
 
   // Season type toggle
@@ -673,6 +720,7 @@ function bindEvents() {
       state.seasonType = btn.dataset.value;
       updateSeasonTypeBtns();
       await refreshView();
+      updateCompareButtonLabel();
     });
   });
 
@@ -720,32 +768,27 @@ function bindEvents() {
   });
 
   els.comparePlayerBtn.addEventListener('click', () => {
-    if (!state.selectedPlayer) {
-      window.alert('Select a primary player first.');
-      return;
-    }
+    if (!state.selectedPlayer) return;
 
     if (state.comparePlayer) {
       state.comparePlayer = null;
+      if (els.comparePlayerSelect) els.comparePlayerSelect.value = '';
       updateCompareButtonLabel();
       renderHistogram();
       return;
     }
 
-    const input = window.prompt('Enter a second player name to compare:');
-    if (input === null) return;
-    const candidate = findCurrentSeasonPlayerByName(input);
-    if (!candidate) {
-      window.alert(`No player named "${input}" was found in ${state.currentSeason} ${state.seasonType}.`);
-      return;
-    }
-    if (candidate.name === state.selectedPlayer.name) {
-      window.alert('Choose a different player for comparison.');
-      return;
-    }
+    const selectedName = els.comparePlayerSelect?.value || '';
+    if (!selectedName) return;
+    const candidate = findCurrentSeasonPlayerByName(selectedName);
+    if (!candidate || candidate.name === state.selectedPlayer.name) return;
     state.comparePlayer = { id: candidate.id, name: candidate.name };
     updateCompareButtonLabel();
     renderHistogram();
+  });
+
+  els.comparePlayerSelect.addEventListener('change', () => {
+    updateCompareButtonLabel();
   });
 
   els.normalTrendlineToggle.addEventListener('change', () => {
@@ -769,7 +812,6 @@ function resetAxisOverrides() {
 
 async function init() {
   els.footerYear.textContent = new Date().getFullYear();
-  updateCompareButtonLabel();
   els.normalTrendlineToggle.checked = state.showNormalTrendline;
 
   const ok = await loadStatsData();
@@ -780,6 +822,8 @@ async function init() {
 
   populateSeasonSelect();
   updateSeasonTypeBtns();
+  populateComparePlayerSelect();
+  updateCompareButtonLabel();
   bindEvents();
 
   // Check for ?player=Name query param
