@@ -11,6 +11,9 @@
 
 const DATA_URL = 'data/web/stats.json';
 
+/** Width (px) of the column-filter popover — must match CSS `.col-filter-popover` width */
+const POPOVER_WIDTH = 240;
+
 /** Tab definitions: id → { label, columns } */
 const TABS = {
   scoring: {
@@ -247,6 +250,7 @@ function crColor(cr, range) {
   const span = max - min;
   const norm = span > 0 ? (cr - min) / span : 0.5;
   // Red(0°) → Yellow(45°) → Green(120°)
+  // Map normalized value (0–1) to hue: 0° = red, 120° = green (HSL color wheel)
   const hue = Math.round(norm * 120);
   return `hsl(${hue}, 65%, 91%)`;
 }
@@ -471,7 +475,7 @@ function openColFilter(colKey, triggerEl) {
   pop.hidden = false;
   els.popoverBackdrop.hidden = false;
 
-  const popW = 240;
+  const popW = POPOVER_WIDTH;
   let left = rect.left;
   if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
   pop.style.left = `${left}px`;
@@ -819,7 +823,8 @@ function bindEvents() {
   });
 
   els.playerSearch.addEventListener('blur', () => {
-    // Slight delay so mousedown on item fires first
+    // Delay slightly so mousedown on an autocomplete item fires before the blur
+    // event fires, allowing the selection click to register first.
     setTimeout(hideAcDropdown, 150);
   });
 
