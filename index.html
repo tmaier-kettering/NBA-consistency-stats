@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="NBA Consistency Stats — interactive player performance consistency ratings across seasons." />
+  <title>NBA Consistency Stats</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html" aria-label="NBA Consistency Stats home">
+        <!-- Basketball logo (SVG) -->
+        <svg class="brand-logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="24" cy="24" r="22" fill="#C9082A" stroke="#F7A528" stroke-width="2"/>
+          <!-- vertical seam -->
+          <path d="M24 2 C17 10 17 20 17 24 C17 28 17 38 24 46" stroke="#F7A528" stroke-width="1.8" fill="none"/>
+          <path d="M24 2 C31 10 31 20 31 24 C31 28 31 38 24 46" stroke="#F7A528" stroke-width="1.8" fill="none"/>
+          <!-- horizontal seam -->
+          <path d="M2 24 L46 24" stroke="#F7A528" stroke-width="1.8"/>
+          <!-- top arc -->
+          <path d="M4 16 Q24 11 44 16" stroke="#F7A528" stroke-width="1.2" fill="none"/>
+          <!-- bottom arc -->
+          <path d="M4 32 Q24 37 44 32" stroke="#F7A528" stroke-width="1.2" fill="none"/>
+        </svg>
+
+        <div class="brand-text">
+          <span class="brand-title">NBA Consistency Stats</span>
+          <span class="brand-subtitle">Player performance consistency ratings across seasons</span>
+        </div>
+      </a>
+
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="index.html" class="nav-link active">Home</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════ MAIN ════════════════════════════ -->
+  <main class="site-main">
+    <div class="app-layout">
+
+      <!-- ───────────── LEFT SIDEBAR FILTERS ───────────── -->
+      <aside class="sidebar" id="sidebar" aria-label="Table filters">
+        <div class="sidebar-title-row">
+          <h2 class="sidebar-title">Filters</h2>
+          <button class="btn-clear-all" id="clearAllFilters" title="Clear all filters">Clear All</button>
+        </div>
+
+        <!-- Season -->
+        <div class="filter-group">
+          <label class="filter-label" for="seasonSelect">Season</label>
+          <select class="filter-select" id="seasonSelect">
+            <option value="">Loading…</option>
+          </select>
+        </div>
+
+        <!-- Season type toggle -->
+        <div class="filter-group">
+          <label class="filter-label">Season Type</label>
+          <div class="toggle-group" role="group" aria-label="Season type">
+            <button class="toggle-btn active" id="btnRegular" data-value="Regular Season">Regular Season</button>
+            <button class="toggle-btn" id="btnPlayoffs" data-value="Playoffs">Playoffs</button>
+          </div>
+        </div>
+
+        <!-- Player name autocomplete -->
+        <div class="filter-group">
+          <label class="filter-label" for="playerSearch">Player Name</label>
+          <div class="autocomplete-wrap">
+            <input
+              type="text"
+              class="filter-input"
+              id="playerSearch"
+              placeholder="Search players…"
+              autocomplete="off"
+              aria-autocomplete="list"
+              aria-controls="acDropdown"
+              aria-expanded="false"
+            />
+            <ul class="ac-dropdown" id="acDropdown" role="listbox" aria-label="Player suggestions" hidden></ul>
+          </div>
+        </div>
+
+        <!-- Games played range -->
+        <div class="filter-group">
+          <label class="filter-label">Games Played</label>
+          <div class="gp-inputs-row">
+            <input type="number" class="gp-num" id="gpMinInput" min="0" max="82" value="0" aria-label="Min games played" />
+            <span class="gp-sep">–</span>
+            <input type="number" class="gp-num" id="gpMaxInput" min="0" max="82" value="82" aria-label="Max games played" />
+          </div>
+          <div class="dual-range-track" id="dualRangeTrack">
+            <div class="dual-range-fill" id="dualRangeFill"></div>
+            <input type="range" class="range-input" id="gpMinSlider" min="0" max="82" value="0" step="1" aria-label="Min games played slider" />
+            <input type="range" class="range-input" id="gpMaxSlider" min="0" max="82" value="82" step="1" aria-label="Max games played slider" />
+          </div>
+        </div>
+
+        <!-- Active column filters summary -->
+        <div class="filter-group" id="colFilterSummaryGroup" hidden>
+          <label class="filter-label">Column Filters</label>
+          <ul class="col-filter-summary" id="colFilterSummary" aria-label="Active column filters"></ul>
+        </div>
+      </aside>
+
+      <!-- ───────────── CONTENT AREA ───────────── -->
+      <section class="content-area">
+        <div class="content-top-bar">
+          <!-- Tabs -->
+          <div class="tabs-bar" role="tablist" aria-label="Stat categories">
+            <button class="tab-btn active" role="tab" aria-selected="true"  data-tab="scoring"  id="tab-scoring">Scoring</button>
+            <button class="tab-btn"         role="tab" aria-selected="false" data-tab="rebounds" id="tab-rebounds">Rebounds</button>
+            <button class="tab-btn"         role="tab" aria-selected="false" data-tab="other"    id="tab-other">Other</button>
+          </div>
+          <p class="row-count" id="rowCount" aria-live="polite"></p>
+        </div>
+
+        <!-- Table -->
+        <div class="table-scroll-wrap" id="tableScrollWrap">
+          <!-- Loading state -->
+          <div class="table-loading" id="tableLoading" aria-busy="true" aria-label="Loading data">
+            <div class="spinner" aria-hidden="true"></div>
+            <p>Loading data…</p>
+          </div>
+
+          <!-- Empty state -->
+          <div class="table-empty" id="tableEmpty" hidden>
+            <p>No players match the current filters.</p>
+          </div>
+
+          <table class="stats-table" id="statsTable" aria-label="Player consistency ratings" hidden>
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════ FOOTER ══════════════════════════ -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p class="footer-brand">NBA Consistency Stats</p>
+      <p class="footer-desc">
+        Consistency Rating (CR) = Average ÷ Standard Deviation.
+        A higher CR means a player performs more consistently game-to-game.
+        Data sourced from the NBA Stats API.
+      </p>
+      <p class="footer-copy">&copy; <span id="footerYear"></span> NBA Consistency Stats. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════════════ OVERLAYS ════════════════════════ -->
+
+  <!-- Header/column tooltip -->
+  <div class="tooltip header-tooltip" id="headerTooltip" role="tooltip" aria-hidden="true" hidden></div>
+
+  <!-- Cell tooltip -->
+  <div class="tooltip cell-tooltip" id="cellTooltip" role="tooltip" aria-hidden="true" hidden></div>
+
+  <!-- Column filter popover (re-used for each column) -->
+  <div class="col-filter-popover" id="colFilterPopover" role="dialog" aria-modal="true" aria-labelledby="colFilterPopoverTitle" hidden>
+    <div class="cfp-header">
+      <span class="cfp-title" id="colFilterPopoverTitle">Filter: PTS CR</span>
+      <button class="cfp-close" id="cfpClose" aria-label="Close filter">&#x2715;</button>
+    </div>
+    <div class="cfp-body">
+      <div class="cfp-row">
+        <label class="cfp-label" for="cfpMin">Min CR</label>
+        <input type="number" class="cfp-input" id="cfpMin" step="0.01" placeholder="No min" />
+      </div>
+      <div class="cfp-row">
+        <label class="cfp-label" for="cfpMax">Max CR</label>
+        <input type="number" class="cfp-input" id="cfpMax" step="0.01" placeholder="No max" />
+      </div>
+      <p class="cfp-range-hint" id="cfpRangeHint"></p>
+    </div>
+    <div class="cfp-footer">
+      <button class="btn btn-ghost" id="cfpClear">Clear</button>
+      <button class="btn btn-primary" id="cfpApply">Apply</button>
+    </div>
+  </div>
+  <div class="popover-backdrop" id="popoverBackdrop" hidden></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
