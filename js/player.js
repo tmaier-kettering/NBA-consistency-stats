@@ -434,8 +434,7 @@ function computeNormalTrendline(values, bins) {
   const std = Math.sqrt(variance);
 
   if (!Number.isFinite(std) || std <= 0) {
-    const edges = [...bins.map(bin => bin.x0), bins[bins.length - 1].x1];
-    return computeBinsFromEdges(values, edges).map(bin => bin.count);
+    return [];
   }
 
   return bins.map(bin => {
@@ -546,7 +545,7 @@ function renderHistogram() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: true },
+      legend: { display: datasets.length > 1 },
       tooltip: {
         callbacks: {
           title(ctx) {
@@ -788,6 +787,11 @@ function bindEvents() {
   });
 
   els.comparePlayerSelect.addEventListener('change', () => {
+    const selectedName = els.comparePlayerSelect?.value || '';
+    if (state.comparePlayer && state.comparePlayer.name !== selectedName) {
+      state.comparePlayer = null;
+      renderHistogram();
+    }
     updateCompareButtonLabel();
   });
 
